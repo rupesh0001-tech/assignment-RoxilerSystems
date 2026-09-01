@@ -22,12 +22,16 @@ import {
   MapPin,
   Mail,
   Flame,
+  Pencil,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../../context/auth/AuthContext';
 import { storeApi, type StoreItem } from '../../apis/stores/storeApi';
 import { ratingApi, type StoreOwnerReviewData } from '../../apis/ratings/ratingApi';
 import { adminApi, type AdminMetrics, type AdminUserItem } from '../../apis/admin/adminApi';
 import { PasswordStrength } from '../../components/common/PasswordStrength';
+import { getApiErrorMessage } from '../auth/RegisterPage';
 
 // Curated Sleek Store Images
 const STORE_IMAGES = [
@@ -96,24 +100,32 @@ export default function DashboardPage() {
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [ratingSuccessMessage, setRatingSuccessMessage] = useState('');
 
-  // Admin Create Store Modal
-  const [createStoreModalOpen, setCreateStoreModalOpen] = useState(false);
-  const [newStoreName, setNewStoreName] = useState('');
-  const [newStoreEmail, setNewStoreEmail] = useState('');
-  const [newStoreAddress, setNewStoreAddress] = useState('');
-  const [newStoreOwnerId, setNewStoreOwnerId] = useState('');
+  // Admin Create/Edit Store Modal
+  const [storeModalMode, setStoreModalMode] = useState<'create' | 'edit'>('create');
+  const [storeModalOpen, setStoreModalOpen] = useState(false);
+  const [editingStoreId, setEditingStoreId] = useState<string | null>(null);
+  const [storeName, setStoreName] = useState('');
+  const [storeEmail, setStoreEmail] = useState('');
+  const [storeAddress, setStoreAddress] = useState('');
+  const [storeOwnerId, setStoreOwnerId] = useState('');
   const [storeFormError, setStoreFormError] = useState('');
   const [storeFormLoading, setStoreFormLoading] = useState(false);
 
-  // Admin Create User Modal
-  const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
-  const [newUserName, setNewUserName] = useState('');
-  const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserPassword, setNewUserPassword] = useState('');
-  const [newUserAddress, setNewUserAddress] = useState('');
-  const [newUserRole, setNewUserRole] = useState<'SYSTEM_ADMIN' | 'STORE_OWNER' | 'NORMAL_USER'>('NORMAL_USER');
+  // Admin Create/Edit User Modal
+  const [userModalMode, setUserModalMode] = useState<'create' | 'edit'>('create');
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [userPassword, setUserPassword] = useState('');
+  const [userAddress, setUserAddress] = useState('');
+  const [userRole, setUserRole] = useState<'SYSTEM_ADMIN' | 'STORE_OWNER' | 'NORMAL_USER'>('NORMAL_USER');
   const [userFormError, setUserFormError] = useState('');
   const [userFormLoading, setUserFormLoading] = useState(false);
+
+  // Delete Confirmation Modal
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'user' | 'store'; id: string; name: string } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -147,7 +159,7 @@ export default function DashboardPage() {
 
   // Fetch Store Owner Reviews
   const fetchOwnerReviews = async () => {
-    if (user?.role !== 'STORE_OWNER') return;
+    if (user?.role !== 'STORE_OWNER' && user?.role !== 'SYSTEM_ADMIN') return;
     setOwnerLoading(true);
     try {
       const res = await ratingApi.getStoreOwnerReviews();
@@ -209,85 +221,168 @@ export default function DashboardPage() {
         setRatingSuccessMessage('');
       }, 1500);
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to submit rating');
+      alert(getApiErrorMessage(err, 'Failed to submit rating'));
     } finally {
       setRatingSubmitting(false);
     }
   };
 
-  // Handle Admin Create Store
-  const handleCreateStore = async (e: React.FormEvent) => {
+  // Open Store Modal
+  const openCreateStoreModal = () => {
+    setStoreModalMode('create');
+    setEditingStoreId(null);
+    setStoreName('');
+    setStoreEmail('');
+    setStoreAddress('');
+    setStoreOwnerId('');
+    setStoreFormError('');
+    setStoreModalOpen(true);
+  };
+
+  const openEditStoreModal = (store: StoreItem) => {
+    setStoreModalMode('edit');
+    setEditingStoreId(store.id);
+    setStoreName(store.name);
+    setStoreEmail(store.email);
+    setStoreAddress(store.address);
+    setStoreOwnerId(store.owner?.id || '');
+    setStoreFormError('');
+    setStoreModalOpen(true);
+  };
+
+  // Handle Save Store (Create or Update)
+  const handleSaveStore = async (e: React.FormEvent) => {
     e.preventDefault();
     setStoreFormError('');
-    if (!newStoreName || !newStoreEmail || !newStoreAddress) {
+    if (!storeName || !storeEmail || !storeAddress) {
       setStoreFormError('All fields are required');
       return;
     }
     setStoreFormLoading(true);
     try {
-      await storeApi.create({
-        name: newStoreName,
-        email: newStoreEmail,
-        address: newStoreAddress,
-        ownerId: newStoreOwnerId || undefined,
-      });
-      setCreateStoreModalOpen(false);
-      setNewStoreName('');
-      setNewStoreEmail('');
-      setNewStoreAddress('');
-      setNewStoreOwnerId('');
+      if (storeModalMode === 'create') {
+        await storeApi.create({
+          name: storeName,
+          email: storeEmail,
+          address: storeAddress,
+          ownerId: storeOwnerId || undefined,
+        });
+      } else if (editingStoreId) {
+        await adminApi.updateStore(editingStoreId, {
+          name: storeName,
+          email: storeEmail,
+          address: storeAddress,
+          ownerId: storeOwnerId || undefined,
+        });
+      }
+      setStoreModalOpen(false);
       fetchStores();
       if (user?.role === 'SYSTEM_ADMIN') fetchAdminData();
     } catch (err: any) {
-      setStoreFormError(err.response?.data?.message || 'Failed to create store');
+      setStoreFormError(getApiErrorMessage(err, 'Failed to save store'));
     } finally {
       setStoreFormLoading(false);
     }
   };
 
-  // Handle Admin Create User
-  const handleCreateUser = async (e: React.FormEvent) => {
+  // Open User Modal
+  const openCreateUserModal = () => {
+    setUserModalMode('create');
+    setEditingUserId(null);
+    setUserName('');
+    setUserEmail('');
+    setUserPassword('');
+    setUserAddress('');
+    setUserRole('NORMAL_USER');
+    setUserFormError('');
+    setUserModalOpen(true);
+  };
+
+  const openEditUserModal = (u: AdminUserItem) => {
+    setUserModalMode('edit');
+    setEditingUserId(u.id);
+    setUserName(u.name);
+    setUserEmail(u.email);
+    setUserPassword('');
+    setUserAddress(u.address);
+    setUserRole(u.role);
+    setUserFormError('');
+    setUserModalOpen(true);
+  };
+
+  // Handle Save User (Create or Update)
+  const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setUserFormError('');
-    if (newUserName.length < 6 || newUserName.length > 60) {
+    if (userName.length < 6 || userName.length > 60) {
       setUserFormError('Name must be between 6 and 60 characters');
       return;
     }
-    if (!newUserAddress || newUserAddress.length > 400) {
+    if (!userAddress || userAddress.length > 400) {
       setUserFormError('Address is required and must not exceed 400 characters');
       return;
     }
-    if (
-      newUserPassword.length < 8 ||
-      newUserPassword.length > 16 ||
-      !/[A-Z]/.test(newUserPassword) ||
-      !/[^A-Za-z0-9]/.test(newUserPassword)
-    ) {
-      setUserFormError(
-        'Password must be 8-16 chars with at least 1 uppercase and 1 special char'
-      );
-      return;
+
+    if (userModalMode === 'create' || userPassword) {
+      if (
+        userPassword.length < 8 ||
+        userPassword.length > 16 ||
+        !/[A-Z]/.test(userPassword) ||
+        !/[^A-Za-z0-9]/.test(userPassword)
+      ) {
+        setUserFormError(
+          'Password must be 8-16 chars with at least 1 uppercase and 1 special char'
+        );
+        return;
+      }
     }
 
     setUserFormLoading(true);
     try {
-      await adminApi.createUser({
-        name: newUserName,
-        email: newUserEmail,
-        password: newUserPassword,
-        address: newUserAddress,
-        role: newUserRole,
-      });
-      setCreateUserModalOpen(false);
-      setNewUserName('');
-      setNewUserEmail('');
-      setNewUserPassword('');
-      setNewUserAddress('');
+      if (userModalMode === 'create') {
+        await adminApi.createUser({
+          name: userName,
+          email: userEmail,
+          password: userPassword,
+          address: userAddress,
+          role: userRole,
+        });
+      } else if (editingUserId) {
+        await adminApi.updateUser(editingUserId, {
+          name: userName,
+          email: userEmail,
+          address: userAddress,
+          role: userRole,
+          password: userPassword || undefined,
+        });
+      }
+      setUserModalOpen(false);
       fetchAdminData();
     } catch (err: any) {
-      setUserFormError(err.response?.data?.message || 'Failed to create user');
+      setUserFormError(getApiErrorMessage(err, 'Failed to save user'));
     } finally {
       setUserFormLoading(false);
+    }
+  };
+
+  // Handle Delete Confirmation
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+    try {
+      if (deleteTarget.type === 'user') {
+        await adminApi.deleteUser(deleteTarget.id);
+        fetchAdminData();
+      } else {
+        await adminApi.deleteStore(deleteTarget.id);
+        fetchStores();
+        if (user?.role === 'SYSTEM_ADMIN') fetchAdminData();
+      }
+      setDeleteTarget(null);
+    } catch (err: any) {
+      alert(getApiErrorMessage(err, 'Failed to delete item'));
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -727,7 +822,7 @@ export default function DashboardPage() {
 
                   {user?.role === 'SYSTEM_ADMIN' && (
                     <button
-                      onClick={() => setCreateStoreModalOpen(true)}
+                      onClick={openCreateStoreModal}
                       className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer w-fit"
                     >
                       <Plus size={16} />
@@ -825,30 +920,51 @@ export default function DashboardPage() {
                           </p>
                         </div>
 
-                        {/* User Rating Status & Action Button */}
-                        <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
+                        {/* User Rating Status & Action Buttons */}
+                        <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-2">
                           <div className="text-xs">
                             {store.userRating ? (
                               <span className="inline-flex items-center gap-1 font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg text-[11px]">
                                 <Star size={11} className="fill-blue-600 text-blue-600" />
-                                Your Score: {store.userRating}★
+                                {store.userRating}★
                               </span>
                             ) : (
                               <span className="text-gray-400 text-[11px] italic">Not rated</span>
                             )}
                           </div>
 
-                          {user?.role === 'NORMAL_USER' && (
-                            <button
-                              onClick={() => {
-                                setRatingModalStore(store);
-                                setSelectedScore(store.userRating || 5);
-                              }}
-                              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-xs transition cursor-pointer active:scale-95"
-                            >
-                              {store.userRating ? 'Modify Rating' : 'Rate Store'}
-                            </button>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            {user?.role === 'NORMAL_USER' && (
+                              <button
+                                onClick={() => {
+                                  setRatingModalStore(store);
+                                  setSelectedScore(store.userRating || 5);
+                                }}
+                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-xs transition cursor-pointer active:scale-95"
+                              >
+                                {store.userRating ? 'Modify Rating' : 'Rate Store'}
+                              </button>
+                            )}
+
+                            {user?.role === 'SYSTEM_ADMIN' && (
+                              <>
+                                <button
+                                  onClick={() => openEditStoreModal(store)}
+                                  className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition cursor-pointer"
+                                  title="Edit Store"
+                                >
+                                  <Pencil size={14} />
+                                </button>
+                                <button
+                                  onClick={() => setDeleteTarget({ type: 'store', id: store.id, name: store.name })}
+                                  className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition cursor-pointer"
+                                  title="Delete Store"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -866,7 +982,7 @@ export default function DashboardPage() {
                           <th className="px-6 py-3.5">Address</th>
                           <th className="px-6 py-3.5">Overall Rating</th>
                           <th className="px-6 py-3.5">My Rating</th>
-                          <th className="px-6 py-3.5 text-right">Action</th>
+                          <th className="px-6 py-3.5 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 text-gray-700">
@@ -904,17 +1020,38 @@ export default function DashboardPage() {
                               )}
                             </td>
                             <td className="px-6 py-4 text-right">
-                              {user?.role === 'NORMAL_USER' && (
-                                <button
-                                  onClick={() => {
-                                    setRatingModalStore(store);
-                                    setSelectedScore(store.userRating || 5);
-                                  }}
-                                  className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded-lg transition cursor-pointer"
-                                >
-                                  {store.userRating ? 'Modify' : 'Rate'}
-                                </button>
-                              )}
+                              <div className="flex items-center justify-end gap-1.5">
+                                {user?.role === 'NORMAL_USER' && (
+                                  <button
+                                    onClick={() => {
+                                      setRatingModalStore(store);
+                                      setSelectedScore(store.userRating || 5);
+                                    }}
+                                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded-lg transition cursor-pointer"
+                                  >
+                                    {store.userRating ? 'Modify' : 'Rate'}
+                                  </button>
+                                )}
+
+                                {user?.role === 'SYSTEM_ADMIN' && (
+                                  <>
+                                    <button
+                                      onClick={() => openEditStoreModal(store)}
+                                      className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition cursor-pointer"
+                                      title="Edit Store"
+                                    >
+                                      <Pencil size={14} />
+                                    </button>
+                                    <button
+                                      onClick={() => setDeleteTarget({ type: 'store', id: store.id, name: store.name })}
+                                      className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition cursor-pointer"
+                                      title="Delete Store"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -926,7 +1063,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* TAB 3: REVIEWS TAB (Customer Reviews for Store Owner / My Ratings for Normal User) */}
+          {/* TAB 3: REVIEWS TAB */}
           {activeTab === 'reviews' && (
             <div className="space-y-6">
               <div>
@@ -1082,19 +1219,19 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* TAB 4: ADMIN USERS MANAGEMENT */}
+          {/* TAB 4: ADMIN USERS MANAGEMENT (FULL CRUD) */}
           {activeTab === 'admin_users' && user?.role === 'SYSTEM_ADMIN' && (
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-bold text-black">User Management</h2>
                   <p className="text-xs text-gray-500">
-                    Manage system administrators, store owners, and normal users
+                    Full CRUD operations: Create, Read, Update, and Delete system users
                   </p>
                 </div>
 
                 <button
-                  onClick={() => setCreateUserModalOpen(true)}
+                  onClick={openCreateUserModal}
                   className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer w-fit"
                 >
                   <UserPlus size={16} />
@@ -1148,7 +1285,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Users Table */}
+              {/* Users Table with Edit & Delete actions */}
               <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
                 {adminUsersLoading ? (
                   <div className="p-12 text-center text-gray-400">Loading user records...</div>
@@ -1166,6 +1303,7 @@ export default function DashboardPage() {
                           <th className="px-6 py-3.5">Address</th>
                           <th className="px-6 py-3.5">Role</th>
                           <th className="px-6 py-3.5">Store & Rating</th>
+                          <th className="px-6 py-3.5 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 text-gray-700">
@@ -1202,6 +1340,25 @@ export default function DashboardPage() {
                               ) : (
                                 <span className="text-gray-400">—</span>
                               )}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => openEditUserModal(u)}
+                                  className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition cursor-pointer"
+                                  title="Edit User"
+                                >
+                                  <Pencil size={14} />
+                                </button>
+                                <button
+                                  onClick={() => setDeleteTarget({ type: 'user', id: u.id, name: u.name })}
+                                  disabled={u.id === user?.id}
+                                  className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                  title={u.id === user?.id ? 'Cannot delete yourself' : 'Delete User'}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1287,17 +1444,21 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ADMIN CREATE STORE MODAL */}
-      {createStoreModalOpen && (
+      {/* ADMIN CREATE / EDIT STORE MODAL */}
+      {storeModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-gray-200">
             <div className="flex justify-between items-start mb-6">
               <div>
-                <h3 className="text-lg font-bold text-black">Add New Store</h3>
-                <p className="text-xs text-gray-500">Register a store on RateHub</p>
+                <h3 className="text-lg font-bold text-black">
+                  {storeModalMode === 'create' ? 'Add New Store' : 'Edit Store Details'}
+                </h3>
+                <p className="text-xs text-gray-500">
+                  {storeModalMode === 'create' ? 'Register a store on RateHub' : 'Update store information'}
+                </p>
               </div>
               <button
-                onClick={() => setCreateStoreModalOpen(false)}
+                onClick={() => setStoreModalOpen(false)}
                 className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100"
               >
                 <X size={18} />
@@ -1310,14 +1471,14 @@ export default function DashboardPage() {
               </div>
             )}
 
-            <form onSubmit={handleCreateStore} className="space-y-4">
+            <form onSubmit={handleSaveStore} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-700">Store Name</label>
                 <input
                   type="text"
                   placeholder="e.g. Modern Artisan Bakery"
-                  value={newStoreName}
-                  onChange={(e) => setNewStoreName(e.target.value)}
+                  value={storeName}
+                  onChange={(e) => setStoreName(e.target.value)}
                   required
                   className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-blue-500"
                 />
@@ -1328,8 +1489,8 @@ export default function DashboardPage() {
                 <input
                   type="email"
                   placeholder="contact@store.com"
-                  value={newStoreEmail}
-                  onChange={(e) => setNewStoreEmail(e.target.value)}
+                  value={storeEmail}
+                  onChange={(e) => setStoreEmail(e.target.value)}
                   required
                   className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-blue-500"
                 />
@@ -1340,8 +1501,8 @@ export default function DashboardPage() {
                 <textarea
                   rows={2}
                   placeholder="123 Main Street, Central Plaza"
-                  value={newStoreAddress}
-                  onChange={(e) => setNewStoreAddress(e.target.value)}
+                  value={storeAddress}
+                  onChange={(e) => setStoreAddress(e.target.value)}
                   required
                   className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-blue-500 resize-none"
                 />
@@ -1350,8 +1511,8 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-700">Assign Store Owner (Optional)</label>
                 <select
-                  value={newStoreOwnerId}
-                  onChange={(e) => setNewStoreOwnerId(e.target.value)}
+                  value={storeOwnerId}
+                  onChange={(e) => setStoreOwnerId(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select a registered Store Owner</option>
@@ -1368,7 +1529,7 @@ export default function DashboardPage() {
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setCreateStoreModalOpen(false)}
+                  onClick={() => setStoreModalOpen(false)}
                   className="w-1/2 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-semibold text-xs hover:bg-gray-50"
                 >
                   Cancel
@@ -1379,7 +1540,7 @@ export default function DashboardPage() {
                   className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5"
                 >
                   {storeFormLoading && <Loader2 size={14} className="animate-spin" />}
-                  <span>Create Store</span>
+                  <span>{storeModalMode === 'create' ? 'Create Store' : 'Update Store'}</span>
                 </button>
               </div>
             </form>
@@ -1387,17 +1548,23 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ADMIN CREATE USER MODAL */}
-      {createUserModalOpen && (
+      {/* ADMIN CREATE / EDIT USER MODAL */}
+      {userModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-gray-200 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-6">
               <div>
-                <h3 className="text-lg font-bold text-black">Add New User</h3>
-                <p className="text-xs text-gray-500">Create an Admin, Store Owner or Normal User</p>
+                <h3 className="text-lg font-bold text-black">
+                  {userModalMode === 'create' ? 'Add New User' : 'Edit User Profile'}
+                </h3>
+                <p className="text-xs text-gray-500">
+                  {userModalMode === 'create'
+                    ? 'Create an Admin, Store Owner or Normal User'
+                    : 'Update account details and permissions'}
+                </p>
               </div>
               <button
-                onClick={() => setCreateUserModalOpen(false)}
+                onClick={() => setUserModalOpen(false)}
                 className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100"
               >
                 <X size={18} />
@@ -1410,17 +1577,17 @@ export default function DashboardPage() {
               </div>
             )}
 
-            <form onSubmit={handleCreateUser} className="space-y-4">
+            <form onSubmit={handleSaveUser} className="space-y-4">
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
                   <label className="text-xs font-semibold text-gray-700">Full Name</label>
-                  <span className="text-[10px] text-gray-400">{newUserName.length}/60 (Min 6)</span>
+                  <span className="text-[10px] text-gray-400">{userName.length}/60 (Min 6)</span>
                 </div>
                 <input
                   type="text"
                   placeholder="e.g. Jonathan Alexander Miller"
-                  value={newUserName}
-                  onChange={(e) => setNewUserName(e.target.value)}
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
                   required
                   className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-purple-500"
                 />
@@ -1431,8 +1598,8 @@ export default function DashboardPage() {
                 <input
                   type="email"
                   placeholder="user@example.com"
-                  value={newUserEmail}
-                  onChange={(e) => setNewUserEmail(e.target.value)}
+                  value={userEmail}
+                  onChange={(e) => setUserEmail(e.target.value)}
                   required
                   className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-purple-500"
                 />
@@ -1441,8 +1608,8 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-700">User Role</label>
                 <select
-                  value={newUserRole}
-                  onChange={(e) => setNewUserRole(e.target.value as any)}
+                  value={userRole}
+                  onChange={(e) => setUserRole(e.target.value as any)}
                   className="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-purple-500"
                 >
                   <option value="NORMAL_USER">Normal User</option>
@@ -1456,30 +1623,32 @@ export default function DashboardPage() {
                 <textarea
                   rows={2}
                   placeholder="742 Evergreen Terrace, Sector 4"
-                  value={newUserAddress}
-                  onChange={(e) => setNewUserAddress(e.target.value)}
+                  value={userAddress}
+                  onChange={(e) => setUserAddress(e.target.value)}
                   required
                   className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-purple-500 resize-none"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700">Password</label>
+                <label className="text-xs font-semibold text-gray-700">
+                  {userModalMode === 'create' ? 'Password' : 'New Password (Leave blank to keep current)'}
+                </label>
                 <input
                   type="password"
-                  placeholder="••••••••"
-                  value={newUserPassword}
-                  onChange={(e) => setNewUserPassword(e.target.value)}
-                  required
+                  placeholder={userModalMode === 'create' ? '••••••••' : 'Leave empty to keep unchanged'}
+                  value={userPassword}
+                  onChange={(e) => setUserPassword(e.target.value)}
+                  required={userModalMode === 'create'}
                   className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-purple-500"
                 />
-                <PasswordStrength password={newUserPassword} />
+                {userPassword && <PasswordStrength password={userPassword} />}
               </div>
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setCreateUserModalOpen(false)}
+                  onClick={() => setUserModalOpen(false)}
                   className="w-1/2 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-semibold text-xs hover:bg-gray-50"
                 >
                   Cancel
@@ -1490,10 +1659,46 @@ export default function DashboardPage() {
                   className="w-1/2 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5"
                 >
                   {userFormLoading && <Loader2 size={14} className="animate-spin" />}
-                  <span>Create User</span>
+                  <span>{userModalMode === 'create' ? 'Create User' : 'Save Changes'}</span>
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-gray-200 text-center animate-in fade-in zoom-in duration-150">
+            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={24} />
+            </div>
+            <h3 className="text-base font-bold text-black mb-1">
+              Delete {deleteTarget.type === 'user' ? 'User' : 'Store'}?
+            </h3>
+            <p className="text-xs text-gray-500 mb-6 leading-relaxed">
+              Are you sure you want to delete <span className="font-semibold text-black">"{deleteTarget.name}"</span>? This action cannot be undone.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                className="w-1/2 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-semibold text-xs hover:bg-gray-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteLoading}
+                onClick={handleConfirmDelete}
+                className="w-1/2 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs rounded-xl shadow-md transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {deleteLoading && <Loader2 size={14} className="animate-spin" />}
+                <span>Confirm Delete</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

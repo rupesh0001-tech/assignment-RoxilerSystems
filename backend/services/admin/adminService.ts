@@ -88,6 +88,27 @@ export class AdminService {
     });
   }
 
+  async getUserById(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        address: true,
+        role: true,
+        createdAt: true,
+        stores: true,
+      },
+    });
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    return user;
+  }
+
   async createUser(data: {
     name: string;
     email: string;
@@ -124,6 +145,138 @@ export class AdminService {
     });
 
     return user;
+  }
+
+  async updateUser(
+    userId: string,
+    data: {
+      name?: string;
+      email?: string;
+      address?: string;
+      role?: Role;
+      password?: string;
+    }
+  ) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    if (data.email && data.email !== user.email) {
+      const emailExists = await prisma.user.findUnique({
+        where: { email: data.email },
+      });
+      if (emailExists) {
+        throw new AppError('Email is already taken by another user', 400);
+      }
+    }
+
+    const updateData: any = {};
+    if (data.name) updateData.name = data.name;
+    if (data.email) updateData.email = data.email;
+    if (data.address) updateData.address = data.address;
+    if (data.role) updateData.role = data.role;
+    if (data.password) {
+      updateData.passwordHash = await bcrypt.hash(data.password, 10);
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        address: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    return updatedUser;
+  }
+
+  async deleteUser(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return { message: 'User deleted successfully' };
+  }
+
+  async updateStore(
+    storeId: string,
+    data: {
+      name?: string;
+      email?: string;
+      address?: string;
+      ownerId?: string;
+    }
+  ) {
+    const store = await prisma.store.findUnique({
+      where: { id: storeId },
+    });
+
+    if (!store) {
+      throw new AppError('Store not found', 404);
+    }
+
+    if (data.email && data.email !== store.email) {
+      const emailExists = await prisma.store.findUnique({
+        where: { email: data.email },
+      });
+      if (emailExists) {
+        throw new AppError('A store with this email already exists', 400);
+      }
+    }
+
+    const updateData: any = {};
+    if (data.name) updateData.name = data.name;
+    if (data.email) updateData.email = data.email;
+    if (data.address) updateData.address = data.address;
+    if (data.ownerId) {
+      const owner = await prisma.user.findUnique({
+        where: { id: data.ownerId },
+      });
+      if (!owner || owner.role !== 'STORE_OWNER') {
+        throw new AppError('Specified owner must be a registered Store Owner', 400);
+      }
+      updateData.ownerId = data.ownerId;
+    }
+
+    const updatedStore = await prisma.store.update({
+      where: { id: storeId },
+      data: updateData,
+    });
+
+    return updatedStore;
+  }
+
+  async deleteStore(storeId: string) {
+    const store = await prisma.store.findUnique({
+      where: { id: storeId },
+    });
+
+    if (!store) {
+      throw new AppError('Store not found', 404);
+    }
+
+    await prisma.store.delete({
+      where: { id: storeId },
+    });
+
+    return { message: 'Store deleted successfully' };
   }
 }
 
