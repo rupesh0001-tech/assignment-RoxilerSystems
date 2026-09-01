@@ -2,9 +2,18 @@
 
 > 🌐 **Live Frontend Application**: [https://frontend-murex-two-44.vercel.app](https://frontend-murex-two-44.vercel.app)  
 > ⚙️ **Live Backend REST API**: [https://assignment-roxilersystems.onrender.com](https://assignment-roxilersystems.onrender.com)  
-> 🗄️ **Cloud Database**: PostgreSQL on Neon
+> 🗄️ **Cloud Database**: PostgreSQL on Neon  
+> 🎥 **Platform Walkthrough Video**: [https://www.youtube.com/watch?v=Ycu_eHzZG5g](https://www.youtube.com/watch?v=Ycu_eHzZG5g)
 
 RateHub is a full-stack, multi-role web application designed for discovering local stores, submitting transparent 1-to-5 star ratings with written reviews, managing store feedback, and administering platform users and listings.
+
+---
+
+## 🎥 Demo Video Walkthrough
+
+[![RateHub Platform Walkthrough](https://img.youtube.com/vi/Ycu_eHzZG5g/maxresdefault.jpg)](https://www.youtube.com/watch?v=Ycu_eHzZG5g)
+
+▶️ **[Watch the full feature walkthrough and multi-role demo on YouTube](https://www.youtube.com/watch?v=Ycu_eHzZG5g)**
 
 ---
 
