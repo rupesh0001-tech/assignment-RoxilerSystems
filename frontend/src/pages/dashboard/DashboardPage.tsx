@@ -15,7 +15,6 @@ import {
   RefreshCw,
   LogOut,
   KeyRound,
-  ExternalLink,
   Plus,
   Loader2,
   SlidersHorizontal,
@@ -423,13 +422,6 @@ export default function DashboardPage() {
               >
                 <KeyRound size={18} className="text-gray-400" />
                 <span>Change Password</span>
-              </Link>
-              <Link
-                to="/"
-                className="flex items-center gap-3 px-3.5 py-2 rounded-xl hover:bg-gray-100 hover:text-black transition"
-              >
-                <ExternalLink size={18} className="text-gray-400" />
-                <span>Landing Page</span>
               </Link>
             </div>
           </div>
