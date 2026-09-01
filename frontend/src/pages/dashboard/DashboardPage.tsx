@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Menu,
   X,
   LayoutGrid,
   FilePlus,
-  Edit,
   Search,
   Users,
   Building2,
@@ -19,6 +18,10 @@ import {
   ArrowUpDown,
   CheckCircle2,
   UserPlus,
+  List,
+  MapPin,
+  Mail,
+  Flame,
 } from 'lucide-react';
 import { useAuth } from '../../context/auth/AuthContext';
 import { storeApi, type StoreItem } from '../../apis/stores/storeApi';
@@ -26,13 +29,46 @@ import { ratingApi, type StoreOwnerReviewData } from '../../apis/ratings/ratingA
 import { adminApi, type AdminMetrics, type AdminUserItem } from '../../apis/admin/adminApi';
 import { PasswordStrength } from '../../components/common/PasswordStrength';
 
+// Curated Sleek Store Images
+const STORE_IMAGES = [
+  '/assets/hero-image.png',
+  '/assets/galleryImage1.png',
+  '/assets/galleryImage2.png',
+  '/assets/galleryImage3.png',
+  '/assets/galleryImage4.png',
+];
+
+export const getStoreImage = (name: string, index: number) => {
+  const hash = (name || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return STORE_IMAGES[(hash + index) % STORE_IMAGES.length];
+};
+
 export default function DashboardPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'stores' | 'owner_reviews' | 'admin_users'>('overview');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+
+  // Determine active view from URL path
+  const currentPath = location.pathname;
+  let activeTab: 'overview' | 'browse' | 'top_rated' | 'reviews' | 'admin_stores' | 'admin_users' = 'overview';
+
+  if (currentPath === '/dashboard/browse') {
+    activeTab = 'browse';
+  } else if (currentPath === '/dashboard/top-rated') {
+    activeTab = 'top_rated';
+  } else if (currentPath === '/dashboard/reviews') {
+    activeTab = 'reviews';
+  } else if (currentPath === '/dashboard/stores') {
+    activeTab = 'admin_stores';
+  } else if (currentPath === '/dashboard/users') {
+    activeTab = 'admin_users';
+  } else {
+    activeTab = 'overview';
+  }
 
   // Stores State
   const [stores, setStores] = useState<StoreItem[]>([]);
@@ -98,8 +134,8 @@ export default function DashboardPage() {
     try {
       const res = await storeApi.getAll({
         search: storeSearch,
-        sortBy: storeSortBy,
-        sortOrder: storeSortOrder,
+        sortBy: activeTab === 'top_rated' ? 'rating' : storeSortBy,
+        sortOrder: activeTab === 'top_rated' ? 'desc' : storeSortOrder,
       });
       setStores(res.data.data);
     } catch (err) {
@@ -148,7 +184,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchStores();
-  }, [storeSearch, storeSortBy, storeSortOrder]);
+  }, [storeSearch, storeSortBy, storeSortOrder, activeTab]);
 
   useEffect(() => {
     if (user?.role === 'STORE_OWNER') {
@@ -261,38 +297,41 @@ export default function DashboardPage() {
       desc: 'Discover and rate top-rated neighborhood stores.',
       icon: <FilePlus size={20} />,
       color: 'purple',
-      onClick: () => setActiveTab('stores'),
+      to: '/dashboard/browse',
     },
     {
-      title: 'Write Review',
-      desc: 'Submit transparent 1 to 5 star verified store ratings.',
-      icon: <Edit size={20} />,
-      color: 'blue',
-      onClick: () => setActiveTab('stores'),
+      title: 'Top Rated',
+      desc: 'Explore stores with the highest verified rating scores.',
+      icon: <Flame size={20} />,
+      color: 'orange',
+      to: '/dashboard/top-rated',
     },
     {
       title: 'Search Directory',
       desc: 'Search stores by name, email, and address quickly.',
       icon: <Search size={20} />,
       color: 'emerald',
-      onClick: () => setActiveTab('stores'),
+      to: '/dashboard/browse',
     },
     {
-      title: user?.role === 'SYSTEM_ADMIN' ? 'User Management' : 'Store Analytics',
+      title:
+        user?.role === 'SYSTEM_ADMIN'
+          ? 'User Management'
+          : user?.role === 'STORE_OWNER'
+          ? 'Customer Reviews'
+          : 'My Reviews',
       desc:
         user?.role === 'SYSTEM_ADMIN'
           ? 'Manage system accounts and platform listings.'
-          : 'View reviewer metrics, averages, and store stats.',
+          : user?.role === 'STORE_OWNER'
+          ? 'View customer reviewer metrics and scores.'
+          : 'Track all your submitted ratings and feedback.',
       icon: <Building2 size={20} />,
-      color: 'orange',
-      onClick: () =>
-        setActiveTab(
-          user?.role === 'SYSTEM_ADMIN'
-            ? 'admin_users'
-            : user?.role === 'STORE_OWNER'
-            ? 'owner_reviews'
-            : 'stores'
-        ),
+      color: 'blue',
+      to:
+        user?.role === 'SYSTEM_ADMIN'
+          ? '/dashboard/users'
+          : '/dashboard/reviews',
     },
   ];
 
@@ -307,7 +346,7 @@ export default function DashboardPage() {
         }}
       />
 
-      {/* Sidebar matching screenshot */}
+      {/* Sidebar with dynamic active links */}
       <aside
         className={`${
           isSidebarOpen ? 'w-64' : 'w-0 -translate-x-full lg:w-20 lg:translate-x-0'
@@ -328,9 +367,9 @@ export default function DashboardPage() {
             <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-3 block mb-2">
               DASHBOARD
             </span>
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold text-sm transition cursor-pointer text-left ${
+            <Link
+              to="/dashboard"
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold text-sm transition text-left ${
                 activeTab === 'overview'
                   ? 'bg-blue-50 text-blue-600'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-black'
@@ -338,7 +377,7 @@ export default function DashboardPage() {
             >
               <LayoutGrid size={18} />
               <span>Overview</span>
-            </button>
+            </Link>
           </div>
 
           {/* Stores & Ratings Section */}
@@ -347,31 +386,41 @@ export default function DashboardPage() {
               STORES & RATINGS
             </span>
             <div className="space-y-1 text-sm font-medium text-gray-600">
-              <button
-                onClick={() => setActiveTab('stores')}
-                className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition cursor-pointer text-left ${
-                  activeTab === 'stores'
+              <Link
+                to="/dashboard/browse"
+                className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition text-left ${
+                  activeTab === 'browse'
                     ? 'bg-blue-50 text-blue-600 font-semibold'
                     : 'hover:bg-gray-100 hover:text-black'
                 }`}
               >
-                <Search size={18} className={activeTab === 'stores' ? 'text-blue-600' : 'text-gray-400'} />
+                <Search size={18} className={activeTab === 'browse' ? 'text-blue-600' : 'text-gray-400'} />
                 <span>Browse Stores</span>
-              </button>
+              </Link>
 
-              {user?.role === 'STORE_OWNER' && (
-                <button
-                  onClick={() => setActiveTab('owner_reviews')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition cursor-pointer text-left ${
-                    activeTab === 'owner_reviews'
-                      ? 'bg-blue-50 text-blue-600 font-semibold'
-                      : 'hover:bg-gray-100 hover:text-black'
-                  }`}
-                >
-                  <Star size={18} className={activeTab === 'owner_reviews' ? 'text-blue-600' : 'text-gray-400'} />
-                  <span>Customer Reviews</span>
-                </button>
-              )}
+              <Link
+                to="/dashboard/top-rated"
+                className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition text-left ${
+                  activeTab === 'top_rated'
+                    ? 'bg-blue-50 text-blue-600 font-semibold'
+                    : 'hover:bg-gray-100 hover:text-black'
+                }`}
+              >
+                <Flame size={18} className={activeTab === 'top_rated' ? 'text-blue-600' : 'text-gray-400'} />
+                <span>Top Rated</span>
+              </Link>
+
+              <Link
+                to="/dashboard/reviews"
+                className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition text-left ${
+                  activeTab === 'reviews'
+                    ? 'bg-blue-50 text-blue-600 font-semibold'
+                    : 'hover:bg-gray-100 hover:text-black'
+                }`}
+              >
+                <Star size={18} className={activeTab === 'reviews' ? 'text-blue-600' : 'text-gray-400'} />
+                <span>{user?.role === 'STORE_OWNER' ? 'Customer Reviews' : 'My Reviews'}</span>
+              </Link>
             </div>
           </div>
 
@@ -382,20 +431,20 @@ export default function DashboardPage() {
                 ADMINISTRATION
               </span>
               <div className="space-y-1 text-sm font-medium text-gray-600">
-                <button
-                  onClick={() => setActiveTab('stores')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition cursor-pointer text-left ${
-                    activeTab === 'stores'
+                <Link
+                  to="/dashboard/stores"
+                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition text-left ${
+                    activeTab === 'admin_stores'
                       ? 'bg-blue-50 text-blue-600 font-semibold'
                       : 'hover:bg-gray-100 hover:text-black'
                   }`}
                 >
-                  <Building2 size={18} className="text-gray-400" />
+                  <Building2 size={18} className={activeTab === 'admin_stores' ? 'text-blue-600' : 'text-gray-400'} />
                   <span>Store Directory</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('admin_users')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition cursor-pointer text-left ${
+                </Link>
+                <Link
+                  to="/dashboard/users"
+                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition text-left ${
                     activeTab === 'admin_users'
                       ? 'bg-blue-50 text-blue-600 font-semibold'
                       : 'hover:bg-gray-100 hover:text-black'
@@ -403,7 +452,7 @@ export default function DashboardPage() {
                 >
                   <Users size={18} className={activeTab === 'admin_users' ? 'text-blue-600' : 'text-gray-400'} />
                   <span>User Management</span>
-                </button>
+                </Link>
               </div>
             </div>
           )}
@@ -425,7 +474,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* User Card at bottom matching screenshot */}
+        {/* User Card at bottom */}
         <div className="p-4 border-t border-gray-100">
           <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-gray-50 border border-gray-200/60 shadow-xs">
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold text-xs shadow-sm shrink-0">
@@ -449,7 +498,7 @@ export default function DashboardPage() {
 
       {/* Main Container */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
-        {/* Header matching screenshot */}
+        {/* Header */}
         <header className="h-16 bg-white border-b border-gray-200 px-6 lg:px-8 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
             <button
@@ -461,10 +510,16 @@ export default function DashboardPage() {
             <span className="text-sm font-semibold text-gray-700">
               {activeTab === 'overview'
                 ? 'Dashboard Overview'
-                : activeTab === 'stores'
-                ? 'Store Listings & Ratings'
-                : activeTab === 'owner_reviews'
-                ? 'Store Owner Reviewer Hub'
+                : activeTab === 'browse'
+                ? 'Browse All Stores'
+                : activeTab === 'top_rated'
+                ? 'Top Rated Stores'
+                : activeTab === 'reviews'
+                ? user?.role === 'STORE_OWNER'
+                  ? 'Customer Reviews'
+                  : 'My Submitted Ratings'
+                : activeTab === 'admin_stores'
+                ? 'Store Directory (Admin)'
                 : 'User Management (Admin)'}
             </span>
           </div>
@@ -523,9 +578,9 @@ export default function DashboardPage() {
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {quickActions.map((action) => (
-                    <button
+                    <Link
                       key={action.title}
-                      onClick={action.onClick}
+                      to={action.to}
                       className="text-left flex flex-col items-start p-6 rounded-2xl border border-gray-200 bg-white hover:border-blue-500/50 hover:shadow-md transition-all group shadow-xs cursor-pointer"
                     >
                       <div
@@ -547,7 +602,7 @@ export default function DashboardPage() {
                       <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
                         {action.desc}
                       </p>
-                    </button>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -609,44 +664,77 @@ export default function DashboardPage() {
                       ? 'View reviewer names, ratings, and customer feedback breakdown in real time.'
                       : 'Discover verified registered stores, browse reviews, and submit your 1 to 5 star scores.'}
                   </p>
-                  <button
-                    onClick={() =>
-                      setActiveTab(
-                        user?.role === 'STORE_OWNER' ? 'owner_reviews' : 'stores'
-                      )
-                    }
-                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95"
+                  <Link
+                    to={user?.role === 'STORE_OWNER' ? '/dashboard/reviews' : '/dashboard/browse'}
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95 inline-block"
                   >
                     {user?.role === 'STORE_OWNER'
                       ? 'View Customer Feedback'
                       : 'Browse & Rate Stores'}
-                  </button>
+                  </Link>
                 </div>
               </div>
-
             </>
           )}
 
-          {/* TAB 2: STORES & RATINGS DIRECTORY */}
-          {activeTab === 'stores' && (
+          {/* TAB 2: STORES BROWSER / TOP RATED / ADMIN STORES */}
+          {(activeTab === 'browse' || activeTab === 'top_rated' || activeTab === 'admin_stores') && (
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-bold text-black">Stores Directory</h2>
+                  <h2 className="text-xl font-bold text-black">
+                    {activeTab === 'top_rated'
+                      ? 'Top Rated Stores'
+                      : activeTab === 'admin_stores'
+                      ? 'Store Directory Management'
+                      : 'Explore Registered Stores'}
+                  </h2>
                   <p className="text-xs text-gray-500">
-                    Search and rate local businesses registered on RateHub
+                    {activeTab === 'top_rated'
+                      ? 'Highest rated cafes, boutiques, and bookshops'
+                      : 'Search, explore, and rate neighborhood businesses on RateHub'}
                   </p>
                 </div>
 
-                {user?.role === 'SYSTEM_ADMIN' && (
-                  <button
-                    onClick={() => setCreateStoreModalOpen(true)}
-                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer w-fit"
-                  >
-                    <Plus size={16} />
-                    <span>Add New Store</span>
-                  </button>
-                )}
+                <div className="flex items-center gap-3">
+                  {/* View Mode Toggle: Cards vs Table */}
+                  <div className="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200/80">
+                    <button
+                      onClick={() => setViewMode('cards')}
+                      className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+                        viewMode === 'cards'
+                          ? 'bg-white text-blue-600 shadow-xs'
+                          : 'text-gray-500 hover:text-black'
+                      }`}
+                      title="Card Grid View"
+                    >
+                      <LayoutGrid size={15} />
+                      <span className="hidden sm:inline">Cards</span>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('table')}
+                      className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+                        viewMode === 'table'
+                          ? 'bg-white text-blue-600 shadow-xs'
+                          : 'text-gray-500 hover:text-black'
+                      }`}
+                      title="Table List View"
+                    >
+                      <List size={15} />
+                      <span className="hidden sm:inline">Table</span>
+                    </button>
+                  </div>
+
+                  {user?.role === 'SYSTEM_ADMIN' && (
+                    <button
+                      onClick={() => setCreateStoreModalOpen(true)}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer w-fit"
+                    >
+                      <Plus size={16} />
+                      <span>Add Store</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Search and Sort Controls */}
@@ -686,23 +774,94 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Stores Table */}
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-                {storesLoading ? (
-                  <div className="p-12 text-center text-gray-400 flex items-center justify-center gap-2">
-                    <Loader2 size={20} className="animate-spin text-blue-600" />
-                    <span>Loading stores directory...</span>
-                  </div>
-                ) : stores.length === 0 ? (
-                  <div className="p-12 text-center text-gray-500 text-sm">
-                    No stores found matching your criteria.
-                  </div>
-                ) : (
+              {/* STORES CONTENT */}
+              {storesLoading ? (
+                <div className="p-16 text-center text-gray-400 flex items-center justify-center gap-2 bg-white rounded-2xl border border-gray-200">
+                  <Loader2 size={20} className="animate-spin text-blue-600" />
+                  <span>Loading stores directory...</span>
+                </div>
+              ) : stores.length === 0 ? (
+                <div className="p-16 text-center text-gray-500 text-sm bg-white rounded-2xl border border-gray-200">
+                  No stores found matching your search.
+                </div>
+              ) : viewMode === 'cards' ? (
+                /* CARD GRID VIEW WITH SLEEK STORE IMAGES */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {stores.map((store, index) => (
+                    <div
+                      key={store.id}
+                      className="bg-white rounded-3xl border border-gray-200 shadow-xs overflow-hidden hover:shadow-md transition-all flex flex-col group"
+                    >
+                      {/* Store Image Frame */}
+                      <div className="h-44 w-full relative overflow-hidden bg-gray-100">
+                        <img
+                          src={getStoreImage(store.name, index)}
+                          alt={store.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        {/* Rating Badge */}
+                        <div className="absolute top-3.5 right-3.5 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl shadow-sm flex items-center gap-1">
+                          <Star size={13} className="fill-amber-500 text-amber-500" />
+                          <span className="font-bold text-xs text-gray-900">
+                            {store.averageRating || '0.0'}
+                          </span>
+                          <span className="text-[10px] text-gray-400">({store.totalRatings})</span>
+                        </div>
+                      </div>
+
+                      {/* Store Details Body */}
+                      <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                        <div>
+                          <h3 className="font-bold text-base text-black group-hover:text-blue-600 transition-colors line-clamp-1">
+                            {store.name}
+                          </h3>
+                          <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-1.5">
+                            <MapPin size={13} className="text-gray-400 shrink-0" />
+                            <span className="truncate">{store.address}</span>
+                          </p>
+                          <p className="text-xs text-gray-400 flex items-center gap-1.5 mt-1">
+                            <Mail size={13} className="text-gray-400 shrink-0" />
+                            <span className="truncate">{store.email}</span>
+                          </p>
+                        </div>
+
+                        {/* User Rating Status & Action Button */}
+                        <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
+                          <div className="text-xs">
+                            {store.userRating ? (
+                              <span className="inline-flex items-center gap-1 font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg text-[11px]">
+                                <Star size={11} className="fill-blue-600 text-blue-600" />
+                                Your Score: {store.userRating}★
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 text-[11px] italic">Not rated</span>
+                            )}
+                          </div>
+
+                          {user?.role === 'NORMAL_USER' && (
+                            <button
+                              onClick={() => {
+                                setRatingModalStore(store);
+                                setSelectedScore(store.userRating || 5);
+                              }}
+                              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-xs transition cursor-pointer active:scale-95"
+                            >
+                              {store.userRating ? 'Modify Rating' : 'Rate Store'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                /* TABLE LIST VIEW */
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
                       <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 uppercase tracking-wider font-semibold">
                         <tr>
-                          <th className="px-6 py-3.5">Store Name</th>
+                          <th className="px-6 py-3.5">Store Details</th>
                           <th className="px-6 py-3.5">Contact Email</th>
                           <th className="px-6 py-3.5">Address</th>
                           <th className="px-6 py-3.5">Overall Rating</th>
@@ -711,9 +870,18 @@ export default function DashboardPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 text-gray-700">
-                        {stores.map((store) => (
+                        {stores.map((store, index) => (
                           <tr key={store.id} className="hover:bg-gray-50/70 transition">
-                            <td className="px-6 py-4 font-bold text-black">{store.name}</td>
+                            <td className="px-6 py-4 font-bold text-black flex items-center gap-3">
+                              <img
+                                src={getStoreImage(store.name, index)}
+                                alt=""
+                                className="w-10 h-10 rounded-xl object-cover shrink-0"
+                              />
+                              <div>
+                                <p className="font-bold text-black">{store.name}</p>
+                              </div>
+                            </td>
                             <td className="px-6 py-4 text-gray-500">{store.email}</td>
                             <td className="px-6 py-4 text-gray-600">{store.address}</td>
                             <td className="px-6 py-4">
@@ -729,10 +897,10 @@ export default function DashboardPage() {
                               {store.userRating ? (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 font-bold rounded-lg">
                                   <Star size={12} className="fill-blue-600 text-blue-600" />
-                                  {store.userRating}★ (Rated)
+                                  {store.userRating}★
                                 </span>
                               ) : (
-                                <span className="text-gray-400 italic">Not rated yet</span>
+                                <span className="text-gray-400 italic">Not rated</span>
                               )}
                             </td>
                             <td className="px-6 py-4 text-right">
@@ -744,7 +912,7 @@ export default function DashboardPage() {
                                   }}
                                   className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded-lg transition cursor-pointer"
                                 >
-                                  {store.userRating ? 'Modify Rating' : 'Rate Store'}
+                                  {store.userRating ? 'Modify' : 'Rate'}
                                 </button>
                               )}
                             </td>
@@ -753,98 +921,164 @@ export default function DashboardPage() {
                       </tbody>
                     </table>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* TAB 3: STORE OWNER REVIEWS */}
-          {activeTab === 'owner_reviews' && user?.role === 'STORE_OWNER' && (
+          {/* TAB 3: REVIEWS TAB (Customer Reviews for Store Owner / My Ratings for Normal User) */}
+          {activeTab === 'reviews' && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-bold text-black">Store Customer Feedback</h2>
+                <h2 className="text-xl font-bold text-black">
+                  {user?.role === 'STORE_OWNER' ? 'Customer Feedback & Reviews' : 'My Submitted Ratings'}
+                </h2>
                 <p className="text-xs text-gray-500">
-                  Review verified customer submissions and store rating score
+                  {user?.role === 'STORE_OWNER'
+                    ? 'Verified customer ratings and review submissions for your store'
+                    : 'Manage and modify your past reviews across stores'}
                 </p>
               </div>
 
-              {/* Store Average Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-gray-500 font-medium">Average Store Rating</span>
-                    <p className="text-3xl font-bold text-black mt-2">
-                      {ownerData?.averageRating || '0.0'}{' '}
-                      <span className="text-sm font-normal text-gray-400">/ 5.0</span>
+              {user?.role === 'STORE_OWNER' ? (
+                <>
+                  {/* Store Average Stats */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between">
+                      <div>
+                        <span className="text-xs text-gray-500 font-medium">Average Store Rating</span>
+                        <p className="text-3xl font-bold text-black mt-2">
+                          {ownerData?.averageRating || '0.0'}{' '}
+                          <span className="text-sm font-normal text-gray-400">/ 5.0</span>
+                        </p>
+                      </div>
+                      <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                        <Star size={24} className="fill-amber-500 text-amber-500" />
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between">
+                      <div>
+                        <span className="text-xs text-gray-500 font-medium">Total Customer Ratings</span>
+                        <p className="text-3xl font-bold text-black mt-2">
+                          {ownerData?.totalRatings || 0}
+                        </p>
+                      </div>
+                      <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <Users size={24} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Reviewers Table */}
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+                    <div className="p-5 border-b border-gray-100">
+                      <h3 className="text-sm font-bold text-black">Customer Ratings List</h3>
+                      <p className="text-xs text-gray-500">
+                        Names, contact emails, addresses, and scores of customers who reviewed your store
+                      </p>
+                    </div>
+
+                    {ownerLoading ? (
+                      <div className="p-12 text-center text-gray-400">Loading reviews...</div>
+                    ) : (ownerData?.ratings.length || 0) === 0 ? (
+                      <div className="p-12 text-center text-gray-500 text-sm">
+                        No customers have submitted ratings for your store yet.
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 uppercase tracking-wider font-semibold">
+                            <tr>
+                              <th className="px-6 py-3.5">Customer Name</th>
+                              <th className="px-6 py-3.5">Email</th>
+                              <th className="px-6 py-3.5">Address</th>
+                              <th className="px-6 py-3.5">Rating</th>
+                              <th className="px-6 py-3.5 text-right">Date</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 text-gray-700">
+                            {ownerData?.ratings.map((r) => (
+                              <tr key={r.id} className="hover:bg-gray-50/70 transition">
+                                <td className="px-6 py-4 font-bold text-black">{r.user.name}</td>
+                                <td className="px-6 py-4 text-gray-500">{r.user.email}</td>
+                                <td className="px-6 py-4 text-gray-600">{r.user.address}</td>
+                                <td className="px-6 py-4">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 font-bold rounded-lg">
+                                    <Star size={12} className="fill-amber-500 text-amber-500" />
+                                    {r.value} Stars
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-right text-gray-400">
+                                  {new Date(r.createdAt).toLocaleDateString()}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                /* Normal User Ratings List */
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+                  <div className="p-5 border-b border-gray-100">
+                    <h3 className="text-sm font-bold text-black">Your Reviews</h3>
+                    <p className="text-xs text-gray-500">
+                      Stores you have rated on RateHub
                     </p>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                    <Star size={24} className="fill-amber-500 text-amber-500" />
+
+                  <div className="p-6">
+                    {stores.filter((s) => s.userRating).length === 0 ? (
+                      <div className="text-center py-12 text-gray-500 text-sm">
+                        You haven't submitted ratings for any stores yet.{' '}
+                        <Link to="/dashboard/browse" className="text-blue-600 font-semibold hover:underline">
+                          Browse stores to rate now
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {stores
+                          .filter((s) => s.userRating)
+                          .map((store, index) => (
+                            <div
+                              key={store.id}
+                              className="p-5 rounded-2xl border border-gray-200 bg-white flex items-center justify-between gap-4"
+                            >
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={getStoreImage(store.name, index)}
+                                  alt=""
+                                  className="w-12 h-12 rounded-xl object-cover shrink-0"
+                                />
+                                <div>
+                                  <h4 className="font-bold text-sm text-black">{store.name}</h4>
+                                  <p className="text-xs text-gray-500">{store.address}</p>
+                                  <span className="inline-flex items-center gap-1 font-bold text-blue-600 text-xs mt-1">
+                                    <Star size={12} className="fill-blue-600" />
+                                    Your Score: {store.userRating}★
+                                  </span>
+                                </div>
+                              </div>
+
+                              <button
+                                onClick={() => {
+                                  setRatingModalStore(store);
+                                  setSelectedScore(store.userRating || 5);
+                                }}
+                                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold text-xs rounded-xl transition cursor-pointer"
+                              >
+                                Modify
+                              </button>
+                            </div>
+                          ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-gray-500 font-medium">Total Customer Ratings</span>
-                    <p className="text-3xl font-bold text-black mt-2">
-                      {ownerData?.totalRatings || 0}
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <Users size={24} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Reviewers Table */}
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-                <div className="p-5 border-b border-gray-100">
-                  <h3 className="text-sm font-bold text-black">Customer Ratings List</h3>
-                  <p className="text-xs text-gray-500">
-                    Names, contact emails, addresses, and scores of customers who reviewed your store
-                  </p>
-                </div>
-
-                {ownerLoading ? (
-                  <div className="p-12 text-center text-gray-400">Loading reviews...</div>
-                ) : (ownerData?.ratings.length || 0) === 0 ? (
-                  <div className="p-12 text-center text-gray-500 text-sm">
-                    No customers have submitted ratings for your store yet.
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 uppercase tracking-wider font-semibold">
-                        <tr>
-                          <th className="px-6 py-3.5">Customer Name</th>
-                          <th className="px-6 py-3.5">Email</th>
-                          <th className="px-6 py-3.5">Address</th>
-                          <th className="px-6 py-3.5">Rating</th>
-                          <th className="px-6 py-3.5 text-right">Date</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 text-gray-700">
-                        {ownerData?.ratings.map((r) => (
-                          <tr key={r.id} className="hover:bg-gray-50/70 transition">
-                            <td className="px-6 py-4 font-bold text-black">{r.user.name}</td>
-                            <td className="px-6 py-4 text-gray-500">{r.user.email}</td>
-                            <td className="px-6 py-4 text-gray-600">{r.user.address}</td>
-                            <td className="px-6 py-4">
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 font-bold rounded-lg">
-                                <Star size={12} className="fill-amber-500 text-amber-500" />
-                                {r.value} Stars
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-right text-gray-400">
-                              {new Date(r.createdAt).toLocaleDateString()}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           )}
 

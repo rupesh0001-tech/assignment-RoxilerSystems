@@ -23,9 +23,17 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-          {/* Protected Routes */}
+          {/* Protected Routes with nested / sub-paths */}
           <Route
             path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/*"
             element={
               <ProtectedRoute>
                 <DashboardPage />
