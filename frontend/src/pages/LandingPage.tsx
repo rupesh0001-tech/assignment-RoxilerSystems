@@ -1,13 +1,34 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/auth/AuthContext';
+import { ChevronDown, LayoutDashboard, KeyRound, LogOut } from 'lucide-react';
 
 export default function LandingPage() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
 
   const galleryContainerRef = useRef<HTMLDivElement>(null);
   const galleryTrackRef = useRef<HTMLDivElement>(null);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        profileDropdownRef.current &&
+        !profileDropdownRef.current.contains(event.target as Node)
+      ) {
+        setProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Navbar scroll effect matching script.js
   useEffect(() => {
@@ -49,6 +70,20 @@ export default function LandingPage() {
       window.removeEventListener('resize', handleGalleryScroll);
     };
   }, []);
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'U';
+    const parts = name.trim().split(' ');
+    return parts.length > 1
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : name.slice(0, 2).toUpperCase();
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setProfileMenuOpen(false);
+    navigate('/');
+  };
 
   const whyChooseUsData = [
     {
@@ -132,11 +167,11 @@ export default function LandingPage() {
         id="navbar"
         className={`fixed z-50 flex items-center justify-between left-1/2 -translate-x-1/2 transition-all duration-500 p-4 ${
           isScrolled
-            ? 'md:w-5xl w-[calc(100vw-14px)] bg-white/60 backdrop-blur-2xl rounded-full mt-4 pl-6 shadow'
+            ? 'md:w-5xl w-[calc(100vw-14px)] bg-white/70 backdrop-blur-2xl rounded-full mt-4 pl-6 shadow-md border border-zinc-200/60'
             : 'md:px-16 lg:px-24 xl:px-32 w-full'
         }`}
       >
-        <Link to="/">
+        <Link to="/" className="flex items-center gap-2">
           <img
             id="navbar-logo"
             src="/assets/logo.svg"
@@ -201,29 +236,121 @@ export default function LandingPage() {
           </a>
         </div>
 
-        {/* Action Button */}
+        {/* Action Area: Dynamic Profile Photo if logged in */}
         <div className="hidden md:flex items-center gap-3">
-          <Link
-            to="/login"
-            className={`px-5 py-2.5 text-sm font-medium transition-all duration-500 cursor-pointer ${
-              isScrolled
-                ? 'text-zinc-800 hover:text-zinc-600'
-                : 'text-white hover:text-white/90'
-            }`}
-          >
-            Sign In
-          </Link>
-          <Link
-            to="/register"
-            id="get-started-btn"
-            className={`px-6 py-2.5 text-sm font-medium cursor-pointer transition-all duration-500 ${
-              isScrolled
-                ? 'bg-zinc-900 text-white hover:bg-zinc-800 rounded-full'
-                : 'bg-zinc-50 text-zinc-800 hover:bg-zinc-200 rounded-md'
-            }`}
-          >
-            Get Started
-          </Link>
+          {user ? (
+            <div className="relative" ref={profileDropdownRef}>
+              <button
+                onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                className={`flex items-center gap-2.5 px-3 py-1.5 rounded-full transition-all cursor-pointer ${
+                  isScrolled
+                    ? 'bg-zinc-100 hover:bg-zinc-200/80 text-zinc-900 border border-zinc-200'
+                    : 'bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md'
+                }`}
+              >
+                {/* Profile Photo / Avatar */}
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-sm ring-1 ring-white/40">
+                  {getInitials(user.name)}
+                </div>
+
+                <div className="text-left leading-none max-w-28 truncate">
+                  <span className="text-xs font-semibold block truncate">
+                    {user.name.split(' ')[0]}
+                  </span>
+                  <span
+                    className={`text-[10px] uppercase font-bold tracking-wider opacity-75 ${
+                      isScrolled ? 'text-blue-600' : 'text-blue-300'
+                    }`}
+                  >
+                    {user.role === 'SYSTEM_ADMIN'
+                      ? 'Admin'
+                      : user.role === 'STORE_OWNER'
+                      ? 'Owner'
+                      : 'User'}
+                  </span>
+                </div>
+
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform ${
+                    profileMenuOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {/* Profile Dropdown Menu */}
+              {profileMenuOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-zinc-200 py-2 z-50 text-zinc-800 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-4 py-3 border-b border-zinc-100 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-sm">
+                      {getInitials(user.name)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-zinc-500">Signed in as</p>
+                      <p className="text-sm font-bold text-zinc-900 truncate">
+                        {user.name}
+                      </p>
+                      <p className="text-[11px] text-zinc-500 truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="py-1">
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setProfileMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 transition font-medium"
+                    >
+                      <LayoutDashboard className="w-4 h-4 text-blue-600" />
+                      <span>Dashboard</span>
+                    </Link>
+                    <Link
+                      to="/change-password"
+                      onClick={() => setProfileMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 transition font-medium"
+                    >
+                      <KeyRound className="w-4 h-4 text-zinc-500" />
+                      <span>Change Password</span>
+                    </Link>
+                  </div>
+
+                  <div className="pt-1 border-t border-zinc-100">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition font-medium text-left cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4 text-red-500" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className={`px-5 py-2.5 text-sm font-medium transition-all duration-500 cursor-pointer ${
+                  isScrolled
+                    ? 'text-zinc-800 hover:text-zinc-600'
+                    : 'text-white hover:text-white/90'
+                }`}
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/register"
+                id="get-started-btn"
+                className={`px-6 py-2.5 text-sm font-medium cursor-pointer transition-all duration-500 ${
+                  isScrolled
+                    ? 'bg-zinc-900 text-white hover:bg-zinc-800 rounded-full'
+                    : 'bg-zinc-50 text-zinc-800 hover:bg-zinc-200 rounded-md'
+                }`}
+              >
+                Get Started
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Toggle Button */}
@@ -255,52 +382,94 @@ export default function LandingPage() {
       {/* Mobile Menu Overlay */}
       <div
         id="mobile-menu-overlay"
-        className={`md:hidden fixed top-0 z-50 left-0 transition-all duration-300 overflow-hidden h-full bg-black/90 backdrop-blur flex-col justify-center flex items-center gap-6 text-sm ${
+        className={`md:hidden fixed top-0 z-50 left-0 transition-all duration-300 overflow-hidden h-full bg-black/95 backdrop-blur-md flex-col justify-center flex items-center gap-6 text-sm p-6 ${
           mobileMenuOpen ? 'w-full' : 'w-0'
         }`}
       >
+        {user && (
+          <div className="flex items-center gap-3 p-3 bg-white/10 rounded-xl border border-white/20 w-full max-w-xs mb-2">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+              {getInitials(user.name)}
+            </div>
+            <div className="min-w-0 text-left">
+              <p className="text-sm font-semibold text-white truncate">
+                {user.name}
+              </p>
+              <p className="text-xs text-blue-300 font-medium">
+                {user.role}
+              </p>
+            </div>
+          </div>
+        )}
+
         <a
           href="#"
           onClick={() => setMobileMenuOpen(false)}
-          className="mobile-nav-link text-white hover:text-white/90 text-base"
+          className="mobile-nav-link text-white hover:text-white/90 text-base font-medium"
         >
           Home
         </a>
         <a
           href="#stores"
           onClick={() => setMobileMenuOpen(false)}
-          className="mobile-nav-link text-white hover:text-white/90 text-base"
+          className="mobile-nav-link text-white hover:text-white/90 text-base font-medium"
         >
           Stores
         </a>
         <a
           href="#features"
           onClick={() => setMobileMenuOpen(false)}
-          className="mobile-nav-link text-white hover:text-white/90 text-base"
+          className="mobile-nav-link text-white hover:text-white/90 text-base font-medium"
         >
           Features
         </a>
         <a
           href="#reviews"
           onClick={() => setMobileMenuOpen(false)}
-          className="mobile-nav-link text-white hover:text-white/90 text-base"
+          className="mobile-nav-link text-white hover:text-white/90 text-base font-medium"
         >
           Reviews
         </a>
-        <Link
-          to="/login"
-          onClick={() => setMobileMenuOpen(false)}
-          className="mobile-nav-link text-white hover:text-white/90 text-base"
-        >
-          Sign In
-        </Link>
-        <Link
-          to="/register"
-          onClick={() => setMobileMenuOpen(false)}
-          className="px-6 py-2.5 rounded-md bg-white text-zinc-900 font-medium mt-2"
-        >
-          Create Account
-        </Link>
+
+        {user ? (
+          <div className="flex flex-col gap-3 w-full max-w-xs mt-2">
+            <Link
+              to="/dashboard"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-center flex items-center justify-center gap-2"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              <span>Go to Dashboard</span>
+            </Link>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                handleLogout();
+              }}
+              className="py-2.5 rounded-lg border border-red-500/50 text-red-400 text-center font-medium"
+            >
+              Sign Out
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 w-full max-w-xs mt-2">
+            <Link
+              to="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2.5 rounded-lg border border-white/20 text-white text-center font-medium"
+            >
+              Sign In
+            </Link>
+            <Link
+              to="/register"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2.5 rounded-lg bg-white text-zinc-900 text-center font-semibold"
+            >
+              Create Account
+            </Link>
+          </div>
+        )}
+
         <button
           onClick={() => setMobileMenuOpen(false)}
           id="mobile-menu-close"
@@ -363,23 +532,23 @@ export default function LandingPage() {
           {/* CTA Buttons */}
           <div className="flex items-center gap-4 mt-8">
             <Link
-              to="/register"
+              to={user ? '/dashboard' : '/register'}
               className="bg-zinc-50 hover:bg-zinc-200 px-6 py-2.5 rounded-md text-zinc-800 text-sm font-medium cursor-pointer transition"
             >
-              View Stores
+              {user ? 'Open Dashboard' : 'View Stores'}
             </Link>
 
             {/* Animated Button */}
             <Link
-              to="/login"
+              to={user ? '/dashboard' : '/login'}
               className="border border-slate-200 text-zinc-50 px-5 py-2.5 rounded-md text-sm font-medium cursor-pointer transition group"
             >
               <div className="relative overflow-hidden">
                 <span className="block transition-transform duration-200 group-hover:-translate-y-full">
-                  Rate a Store
+                  {user ? 'My Profile' : 'Rate a Store'}
                 </span>
                 <span className="absolute top-0 left-0 block transition-transform duration-200 group-hover:translate-y-0 translate-y-full">
-                  Rate a Store
+                  {user ? 'My Profile' : 'Rate a Store'}
                 </span>
               </div>
             </Link>
@@ -402,10 +571,10 @@ export default function LandingPage() {
             </p>
 
             <Link
-              to="/register"
+              to={user ? '/dashboard' : '/register'}
               className="mt-7 bg-zinc-950 hover:bg-zinc-900 text-white px-7 py-3 rounded-full text-sm transition cursor-pointer inline-block"
             >
-              Explore Stores
+              {user ? 'Go to Dashboard' : 'Explore Stores'}
             </Link>
           </div>
 
@@ -769,10 +938,10 @@ export default function LandingPage() {
             </p>
 
             <Link
-              to="/register"
+              to={user ? '/dashboard' : '/register'}
               className="bg-black hover:bg-zinc-900 text-white text-sm px-5 py-3.5 rounded-lg transition-all duration-200 flex items-center gap-2 group cursor-pointer"
             >
-              <span>Browse Stores</span>
+              <span>{user ? 'View Dashboard' : 'Browse Stores'}</span>
               <svg
                 className="transition-transform duration-200 group-hover:translate-x-1"
                 width="16"
