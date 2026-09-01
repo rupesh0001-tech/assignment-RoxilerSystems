@@ -475,49 +475,75 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {/* Stores & Ratings Section */}
-          <div>
-            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-3 block mb-2">
-              STORES & RATINGS
-            </span>
-            <div className="space-y-1 text-sm font-medium text-gray-600">
-              <Link
-                to="/dashboard/browse"
-                className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition text-left ${
-                  activeTab === 'browse'
-                    ? 'bg-blue-50 text-blue-600 font-semibold'
-                    : 'hover:bg-gray-100 hover:text-black'
-                }`}
-              >
-                <Search size={18} className={activeTab === 'browse' ? 'text-blue-600' : 'text-gray-400'} />
-                <span>Browse Stores</span>
-              </Link>
+          {/* Stores & Ratings Section - for Normal User & System Admin */}
+          {user?.role !== 'STORE_OWNER' && (
+            <div>
+              <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-3 block mb-2">
+                STORES & RATINGS
+              </span>
+              <div className="space-y-1 text-sm font-medium text-gray-600">
+                <Link
+                  to="/dashboard/browse"
+                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition text-left ${
+                    activeTab === 'browse'
+                      ? 'bg-blue-50 text-blue-600 font-semibold'
+                      : 'hover:bg-gray-100 hover:text-black'
+                  }`}
+                >
+                  <Search size={18} className={activeTab === 'browse' ? 'text-blue-600' : 'text-gray-400'} />
+                  <span>Browse Stores</span>
+                </Link>
 
-              <Link
-                to="/dashboard/top-rated"
-                className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition text-left ${
-                  activeTab === 'top_rated'
-                    ? 'bg-blue-50 text-blue-600 font-semibold'
-                    : 'hover:bg-gray-100 hover:text-black'
-                }`}
-              >
-                <Flame size={18} className={activeTab === 'top_rated' ? 'text-blue-600' : 'text-gray-400'} />
-                <span>Top Rated</span>
-              </Link>
+                <Link
+                  to="/dashboard/top-rated"
+                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition text-left ${
+                    activeTab === 'top_rated'
+                      ? 'bg-blue-50 text-blue-600 font-semibold'
+                      : 'hover:bg-gray-100 hover:text-black'
+                  }`}
+                >
+                  <Flame size={18} className={activeTab === 'top_rated' ? 'text-blue-600' : 'text-gray-400'} />
+                  <span>Top Rated</span>
+                </Link>
 
-              <Link
-                to="/dashboard/reviews"
-                className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition text-left ${
-                  activeTab === 'reviews'
-                    ? 'bg-blue-50 text-blue-600 font-semibold'
-                    : 'hover:bg-gray-100 hover:text-black'
-                }`}
-              >
-                <Star size={18} className={activeTab === 'reviews' ? 'text-blue-600' : 'text-gray-400'} />
-                <span>{user?.role === 'STORE_OWNER' ? 'Customer Reviews' : 'My Reviews'}</span>
-              </Link>
+                {user?.role === 'NORMAL_USER' && (
+                  <Link
+                    to="/dashboard/reviews"
+                    className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition text-left ${
+                      activeTab === 'reviews'
+                        ? 'bg-blue-50 text-blue-600 font-semibold'
+                        : 'hover:bg-gray-100 hover:text-black'
+                    }`}
+                  >
+                    <Star size={18} className={activeTab === 'reviews' ? 'text-blue-600' : 'text-gray-400'} />
+                    <span>My Submitted Ratings</span>
+                  </Link>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Store Owner Specific Menu */}
+          {user?.role === 'STORE_OWNER' && (
+            <div>
+              <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-3 block mb-2">
+                MY STORE
+              </span>
+              <div className="space-y-1 text-sm font-medium text-gray-600">
+                <Link
+                  to="/dashboard/reviews"
+                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition text-left ${
+                    activeTab === 'reviews'
+                      ? 'bg-blue-50 text-blue-600 font-semibold'
+                      : 'hover:bg-gray-100 hover:text-black'
+                  }`}
+                >
+                  <Star size={18} className={activeTab === 'reviews' ? 'text-blue-600' : 'text-gray-400'} />
+                  <span>Customer Reviews</span>
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* Administration Section */}
           {user?.role === 'SYSTEM_ADMIN' && (
@@ -666,109 +692,225 @@ export default function DashboardPage() {
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <>
-              {/* Quick Actions */}
-              <div>
-                <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
-                  QUICK ACTIONS
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {quickActions.map((action) => (
-                    <Link
-                      key={action.title}
-                      to={action.to}
-                      className="text-left flex flex-col items-start p-6 rounded-2xl border border-gray-200 bg-white hover:border-blue-500/50 hover:shadow-md transition-all group shadow-xs cursor-pointer"
-                    >
-                      <div
-                        className={`p-3 rounded-xl transition-all group-hover:scale-110 mb-4 ${
-                          action.color === 'purple'
-                            ? 'bg-purple-50 text-purple-600'
-                            : action.color === 'blue'
-                            ? 'bg-blue-50 text-blue-600'
-                            : action.color === 'emerald'
-                            ? 'bg-emerald-50 text-emerald-600'
-                            : 'bg-orange-50 text-orange-600'
-                        }`}
-                      >
-                        {action.icon}
+              {/* STORE OWNER SPECIFIC DASHBOARD VIEW */}
+              {user?.role === 'STORE_OWNER' ? (
+                <div className="space-y-8">
+                  {/* Store Overview Banner */}
+                  <div className="bg-white rounded-3xl border border-gray-200 p-6 lg:p-8 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex items-center gap-5">
+                      <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <Building2 size={32} />
                       </div>
-                      <h3 className="font-bold text-black text-sm mb-1">
-                        {action.title}
-                      </h3>
-                      <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
-                        {action.desc}
-                      </p>
-                    </Link>
-                  ))}
-                </div>
-              </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700">
+                            Store Owner Hub
+                          </span>
+                        </div>
+                        <h2 className="text-xl font-bold text-black mt-1">
+                          Welcome back, {user?.name}
+                        </h2>
+                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1.5">
+                          <MapPin size={13} className="text-gray-400" />
+                          <span>{user?.address}</span>
+                        </p>
+                      </div>
+                    </div>
 
-              {/* Admin Platform Metrics if Admin */}
-              {user?.role === 'SYSTEM_ADMIN' && adminMetrics && (
-                <div>
-                  <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
-                    ADMIN PLATFORM STATS
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    <Link
+                      to="/change-password"
+                      className="px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 font-semibold text-xs rounded-xl border border-gray-200 transition flex items-center gap-2 w-fit"
+                    >
+                      <KeyRound size={14} />
+                      <span>Change Password</span>
+                    </Link>
+                  </div>
+
+                  {/* Store Metrics */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between">
                       <div>
-                        <span className="text-xs text-gray-500 font-medium">Total Registered Users</span>
-                        <p className="text-3xl font-bold text-black mt-2">{adminMetrics.totalUsers}</p>
-                      </div>
-                      <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                        <Users size={22} />
-                      </div>
-                    </div>
-                    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between">
-                      <div>
-                        <span className="text-xs text-gray-500 font-medium">Total Registered Stores</span>
-                        <p className="text-3xl font-bold text-black mt-2">{adminMetrics.totalStores}</p>
-                      </div>
-                      <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                        <Building2 size={22} />
-                      </div>
-                    </div>
-                    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between">
-                      <div>
-                        <span className="text-xs text-gray-500 font-medium">Total Ratings Submitted</span>
-                        <p className="text-3xl font-bold text-black mt-2">{adminMetrics.totalRatings}</p>
+                        <span className="text-xs text-gray-500 font-medium">Average Store Rating</span>
+                        <p className="text-3xl font-bold text-black mt-2">
+                          {ownerData?.averageRating || '0.0'}{' '}
+                          <span className="text-sm font-normal text-gray-400">/ 5.0</span>
+                        </p>
                       </div>
                       <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                        <Star size={22} />
+                        <Star size={24} className="fill-amber-500 text-amber-500" />
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between">
+                      <div>
+                        <span className="text-xs text-gray-500 font-medium">Total Customer Ratings</span>
+                        <p className="text-3xl font-bold text-black mt-2">
+                          {ownerData?.totalRatings || 0}
+                        </p>
+                      </div>
+                      <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <Users size={24} />
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* Recent Versions / Ratings Card matching screenshot */}
-              <div>
-                <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
-                  RECENT RATINGS & REVIEWS
-                </h2>
-                <div className="rounded-2xl border border-gray-200 bg-white p-12 flex flex-col items-center justify-center text-center shadow-xs">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
-                    <Clock size={24} />
+                  {/* Customer Reviews Table */}
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+                    <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-bold text-black">Customer Reviews & Ratings</h3>
+                        <p className="text-xs text-gray-500">
+                          Users who have submitted ratings for your store
+                        </p>
+                      </div>
+                    </div>
+
+                    {ownerLoading ? (
+                      <div className="p-12 text-center text-gray-400 flex items-center justify-center gap-2">
+                        <Loader2 size={16} className="animate-spin text-blue-600" />
+                        <span>Loading reviews...</span>
+                      </div>
+                    ) : (ownerData?.ratings.length || 0) === 0 ? (
+                      <div className="p-12 text-center text-gray-500 text-sm">
+                        No customers have submitted ratings for your store yet.
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 uppercase tracking-wider font-semibold">
+                            <tr>
+                              <th className="px-6 py-3.5">Customer Name</th>
+                              <th className="px-6 py-3.5">Email</th>
+                              <th className="px-6 py-3.5">Address</th>
+                              <th className="px-6 py-3.5">Rating</th>
+                              <th className="px-6 py-3.5 text-right">Date</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 text-gray-700">
+                            {ownerData?.ratings.map((r) => (
+                              <tr key={r.id} className="hover:bg-gray-50/70 transition">
+                                <td className="px-6 py-4 font-bold text-black">{r.user.name}</td>
+                                <td className="px-6 py-4 text-gray-500">{r.user.email}</td>
+                                <td className="px-6 py-4 text-gray-600">{r.user.address}</td>
+                                <td className="px-6 py-4">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 font-bold rounded-lg">
+                                    <Star size={12} className="fill-amber-500 text-amber-500" />
+                                    {r.value} Stars
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-right text-gray-400">
+                                  {new Date(r.createdAt).toLocaleDateString()}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
-                  <h3 className="text-base font-bold text-black mb-1">
-                    {user?.role === 'STORE_OWNER'
-                      ? `${ownerData?.totalRatings || 0} Ratings Received for Your Store`
-                      : 'Explore Neighborhood Stores'}
-                  </h3>
-                  <p className="text-xs text-gray-500 max-w-sm mb-6 leading-relaxed">
-                    {user?.role === 'STORE_OWNER'
-                      ? 'View reviewer names, ratings, and customer feedback breakdown in real time.'
-                      : 'Discover verified registered stores, browse reviews, and submit your 1 to 5 star scores.'}
-                  </p>
-                  <Link
-                    to={user?.role === 'STORE_OWNER' ? '/dashboard/reviews' : '/dashboard/browse'}
-                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95 inline-block"
-                  >
-                    {user?.role === 'STORE_OWNER'
-                      ? 'View Customer Feedback'
-                      : 'Browse & Rate Stores'}
-                  </Link>
                 </div>
-              </div>
+              ) : (
+                /* NON-STORE-OWNER OVERVIEW (Admin and Normal User) */
+                <>
+                  {/* Quick Actions */}
+                  <div>
+                    <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
+                      QUICK ACTIONS
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {quickActions.map((action) => (
+                        <Link
+                          key={action.title}
+                          to={action.to}
+                          className="text-left flex flex-col items-start p-6 rounded-2xl border border-gray-200 bg-white hover:border-blue-500/50 hover:shadow-md transition-all group shadow-xs cursor-pointer"
+                        >
+                          <div
+                            className={`p-3 rounded-xl transition-all group-hover:scale-110 mb-4 ${
+                              action.color === 'purple'
+                                ? 'bg-purple-50 text-purple-600'
+                                : action.color === 'blue'
+                                ? 'bg-blue-50 text-blue-600'
+                                : action.color === 'emerald'
+                                ? 'bg-emerald-50 text-emerald-600'
+                                : 'bg-orange-50 text-orange-600'
+                            }`}
+                          >
+                            {action.icon}
+                          </div>
+                          <h3 className="font-bold text-black text-sm mb-1">
+                            {action.title}
+                          </h3>
+                          <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                            {action.desc}
+                          </p>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Admin Platform Metrics if Admin */}
+                  {user?.role === 'SYSTEM_ADMIN' && adminMetrics && (
+                    <div>
+                      <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
+                        ADMIN PLATFORM STATS
+                      </h2>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between">
+                          <div>
+                            <span className="text-xs text-gray-500 font-medium">Total Registered Users</span>
+                            <p className="text-3xl font-bold text-black mt-2">{adminMetrics.totalUsers}</p>
+                          </div>
+                          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                            <Users size={22} />
+                          </div>
+                        </div>
+                        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between">
+                          <div>
+                            <span className="text-xs text-gray-500 font-medium">Total Registered Stores</span>
+                            <p className="text-3xl font-bold text-black mt-2">{adminMetrics.totalStores}</p>
+                          </div>
+                          <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                            <Building2 size={22} />
+                          </div>
+                        </div>
+                        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between">
+                          <div>
+                            <span className="text-xs text-gray-500 font-medium">Total Ratings Submitted</span>
+                            <p className="text-3xl font-bold text-black mt-2">{adminMetrics.totalRatings}</p>
+                          </div>
+                          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                            <Star size={22} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recent Versions / Ratings Card for Normal User */}
+                  <div>
+                    <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
+                      RECENT RATINGS & REVIEWS
+                    </h2>
+                    <div className="rounded-2xl border border-gray-200 bg-white p-12 flex flex-col items-center justify-center text-center shadow-xs">
+                      <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
+                        <Clock size={24} />
+                      </div>
+                      <h3 className="text-base font-bold text-black mb-1">
+                        Explore Neighborhood Stores
+                      </h3>
+                      <p className="text-xs text-gray-500 max-w-sm mb-6 leading-relaxed">
+                        Discover verified registered stores, browse reviews, and submit your 1 to 5 star scores.
+                      </p>
+                      <Link
+                        to="/dashboard/browse"
+                        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95 inline-block"
+                      >
+                        Browse & Rate Stores
+                      </Link>
+                    </div>
+                  </div>
+                </>
+              )}
             </>
           )}
 
