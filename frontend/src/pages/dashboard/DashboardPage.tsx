@@ -11,8 +11,6 @@ import {
   Building2,
   Star,
   Clock,
-  Sparkles,
-  RefreshCw,
   LogOut,
   KeyRound,
   Plus,
@@ -626,101 +624,6 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Bottom 2-Column: Sync Profile & Tracker matching screenshot */}
-              <div>
-                <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
-                  SYNC STORE DIRECTORY & RATING METRICS
-                </h2>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Left Sync Card */}
-                  <div className="lg:col-span-2 rounded-2xl border border-gray-200 bg-white p-6 shadow-xs flex flex-col justify-between relative overflow-hidden">
-                    <div className="relative z-10">
-                      <div className="flex items-center gap-2 text-blue-600 font-bold text-xs mb-3">
-                        <Sparkles size={16} className="animate-pulse" />
-                        <span>Store Directory Active</span>
-                      </div>
-                      <h3 className="text-base font-bold text-black mb-2">
-                        Your Store Reviews & Ratings are Synced
-                      </h3>
-                      <p className="text-xs text-gray-500 leading-relaxed mb-6">
-                        You can discover verified stores, submit transparent 1-to-5 star scores, and modify your past reviews anytime. Use the sync button below to refresh real-time metrics.
-                      </p>
-                    </div>
-
-                    <div className="relative z-10 flex gap-3">
-                      <button
-                        onClick={fetchStores}
-                        className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition-all inline-flex items-center gap-2 cursor-pointer active:scale-95"
-                      >
-                        <RefreshCw size={14} />
-                        <span>Sync Changes</span>
-                      </button>
-
-                      {user?.role === 'SYSTEM_ADMIN' && (
-                        <>
-                          <button
-                            onClick={() => setCreateStoreModalOpen(true)}
-                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5"
-                          >
-                            <Plus size={14} />
-                            <span>Add Store</span>
-                          </button>
-                          <button
-                            onClick={() => setCreateUserModalOpen(true)}
-                            className="px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5"
-                          >
-                            <UserPlus size={14} />
-                            <span>Add User</span>
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right Limits / Stats Tracker Card */}
-                  <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 text-blue-600 font-bold text-xs mb-4">
-                        <Sparkles size={16} />
-                        <span>Rating Activity Tracker</span>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex justify-between items-center text-xs font-semibold text-gray-700 mb-1.5">
-                            <span>Available Stores</span>
-                            <span className="text-black font-bold">{stores.length}</span>
-                          </div>
-                          <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-blue-600 rounded-full"
-                              style={{ width: `${Math.min(100, stores.length * 25)}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="flex justify-between items-center text-xs font-semibold text-gray-700 mb-1.5">
-                            <span>Platform Quality Index</span>
-                            <span className="text-blue-600 font-bold">4.8 / 5.0</span>
-                          </div>
-                          <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-emerald-500 rounded-full"
-                              style={{ width: '96%' }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t border-gray-100 mt-4 text-[11px] text-gray-500 flex justify-between">
-                      <span>Status</span>
-                      <span className="font-bold text-emerald-600">● 100% Operational</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </>
           )}
 
