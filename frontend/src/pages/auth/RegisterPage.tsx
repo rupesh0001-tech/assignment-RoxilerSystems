@@ -5,6 +5,22 @@ import { useAuth } from '../../context/auth/AuthContext';
 import { PasswordStrength } from '../../components/common/PasswordStrength';
 import { AuthBackground } from './LoginPage';
 
+export const getApiErrorMessage = (err: any, defaultMessage: string): string => {
+  if (err?.response?.data) {
+    const { errors, message } = err.response.data;
+    if (Array.isArray(errors) && errors.length > 0) {
+      return errors.map((e: any) => e.message).filter(Boolean).join('. ');
+    }
+    if (typeof message === 'string' && message.trim()) {
+      return message;
+    }
+  }
+  if (err?.message && typeof err.message === 'string') {
+    return err.message;
+  }
+  return defaultMessage;
+};
+
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { register } = useAuth();
@@ -52,9 +68,7 @@ export default function RegisterPage() {
       await register({ name, email, address, password });
       navigate('/dashboard', { replace: true });
     } catch (err: any) {
-      setError(
-        err.response?.data?.message || 'Registration failed. Please check your details.'
-      );
+      setError(getApiErrorMessage(err, 'Registration failed. Please check your details.'));
     } finally {
       setLoading(false);
     }
@@ -74,7 +88,7 @@ export default function RegisterPage() {
           </p>
 
           {error && (
-            <div className="mb-6 p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-medium">
+            <div className="mb-6 p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-medium leading-relaxed">
               {error}
             </div>
           )}

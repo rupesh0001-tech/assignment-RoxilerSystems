@@ -39,7 +39,13 @@ export default function LoginPage() {
       await login({ email, password });
       navigate(from, { replace: true });
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
+        setError(err.response.data.errors.map((e: any) => e.message).join('. '));
+      } else {
+        setError('Invalid email or password. Please verify and try again.');
+      }
     } finally {
       setLoading(false);
     }
