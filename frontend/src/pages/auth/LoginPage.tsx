@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, Loader, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader } from 'lucide-react';
 import { useAuth } from '../../context/auth/AuthContext';
 
 export default function LoginPage() {
@@ -25,25 +25,14 @@ export default function LoginPage() {
       await login({ email, password });
       navigate(from, { replace: true });
     } catch (err: any) {
-      setError(
-        err.response?.data?.message || 'Invalid email or password'
-      );
+      setError(err.response?.data?.message || 'Login failed');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4 relative">
-      {/* Back to Home */}
-      <Link
-        to="/"
-        className="absolute top-6 left-6 flex items-center gap-2 text-slate-300 hover:text-white text-sm transition font-medium"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Home
-      </Link>
-
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
         {/* Header */}
         <div className="mb-8">
@@ -121,23 +110,23 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white font-semibold py-2.5 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm cursor-pointer"
+            className="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading && <Loader className="w-4 h-4 animate-spin" />}
             <span>{loading ? 'Signing in...' : 'Sign In'}</span>
           </button>
         </form>
 
-        {/* Quick Demo Credentials Box */}
+        {/* Quick Test Demo Logins */}
         <div className="mt-6 p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-600 space-y-1">
-          <p className="font-semibold text-gray-800">Quick Test Logins:</p>
+          <p className="font-semibold text-gray-800">Quick Test Accounts:</p>
           <p>• Admin: <span className="font-mono text-gray-800">admin@ratehub.com</span> / <span className="font-mono text-gray-800">AdminPassword123!</span></p>
           <p>• Store Owner: <span className="font-mono text-gray-800">owner@brewnbloom.com</span> / <span className="font-mono text-gray-800">OwnerPassword123!</span></p>
           <p>• Normal User: <span className="font-mono text-gray-800">user@example.com</span> / <span className="font-mono text-gray-800">UserPassword123!</span></p>
         </div>
 
         {/* Sign Up Link */}
-        <p className="mt-6 text-center text-gray-600 text-sm">
+        <p className="mt-6 text-center text-gray-600">
           Don't have an account?{' '}
           <Link to="/register" className="text-blue-600 hover:text-blue-700 font-semibold">
             Sign up

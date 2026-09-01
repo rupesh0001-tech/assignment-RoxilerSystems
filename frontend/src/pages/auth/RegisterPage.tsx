@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, Loader, User, MapPin, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader, User, MapPin } from 'lucide-react';
 import { useAuth } from '../../context/auth/AuthContext';
 import { PasswordStrength } from '../../components/common/PasswordStrength';
 
@@ -60,21 +60,12 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4 relative py-12">
-      {/* Back to Home */}
-      <Link
-        to="/"
-        className="absolute top-6 left-6 flex items-center gap-2 text-slate-300 hover:text-white text-sm transition font-medium"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Home
-      </Link>
-
-      <div className="w-full max-w-lg bg-white rounded-lg shadow-xl p-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4 py-12">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
-          <p className="text-gray-600">Join RateHub to rate and discover local stores</p>
+          <p className="text-gray-600">Sign up to submit ratings on RateHub</p>
         </div>
 
         {/* Error Message */}
@@ -86,14 +77,14 @@ export default function RegisterPage() {
 
         {/* Register Form */}
         <form onSubmit={handleRegister} className="space-y-4">
-          {/* Name */}
+          {/* Name Input */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-gray-700">
                 Full Name
               </label>
               <span className={`text-xs ${isNameValid ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
-                {name.length}/60 (Min 20 chars)
+                {name.length}/60 (Min 20)
               </span>
             </div>
             <div className="relative">
@@ -109,7 +100,7 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Email */}
+          {/* Email Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Email Address
@@ -127,14 +118,14 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Address */}
+          {/* Address Input */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-gray-700">
                 Address
               </label>
               <span className="text-xs text-gray-500">
-                {address.length}/400 chars
+                {address.length}/400
               </span>
             </div>
             <div className="relative">
@@ -150,7 +141,7 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Password */}
+          {/* Password Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Password
@@ -184,7 +175,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white font-semibold py-2.5 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm cursor-pointer mt-4"
+            className="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
           >
             {loading && <Loader className="w-4 h-4 animate-spin" />}
             <span>{loading ? 'Creating Account...' : 'Sign Up'}</span>
@@ -192,7 +183,7 @@ export default function RegisterPage() {
         </form>
 
         {/* Sign In Link */}
-        <p className="mt-6 text-center text-gray-600 text-sm">
+        <p className="mt-6 text-center text-gray-600">
           Already have an account?{' '}
           <Link to="/login" className="text-blue-600 hover:text-blue-700 font-semibold">
             Sign in

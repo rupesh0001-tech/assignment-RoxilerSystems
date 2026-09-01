@@ -52,31 +52,31 @@ export default function LandingPage() {
 
   const whyChooseUsData = [
     {
-      title: 'Verified Store Reviews & Ratings',
+      title: 'Verified Store Listings & Genuine Ratings',
       description:
-        'Access a curated directory of verified local stores, ensuring unbiased 1-to-5 star ratings and total transparency.',
+        'Access a curated database of verified local stores, ensuring transparency and security in every 1-to-5 star rating submitted.',
       image: '/assets/house.png',
     },
     {
-      title: 'Expert Store Insights & Discovery',
+      title: 'Expert Local Store Insights',
       description:
         'Make informed shopping decisions with detailed store performance ratings, reviewer history, and neighborhood trends.',
       image: '/assets/galleryImage1.png',
     },
     {
-      title: 'Seamless Rating & Feedback System',
+      title: 'Seamless Rating & Feedback Process',
       description:
-        'Easily rate stores from 1 to 5 stars, modify previous scores, and share genuine reviews anytime through an intuitive portal.',
+        'Easily submit ratings between 1 and 5 stars, modify previous submissions, and share genuine reviews through a single portal.',
       image: '/assets/galleryImage2.png',
     },
     {
-      title: 'Store Owner Analytics & Reports',
+      title: 'Store Owner Analytics & Review History',
       description:
-        'Store owners access dedicated real-time hubs displaying average store ratings, customer feedback breakdown, and reviewer data.',
+        'Store owners access dedicated dashboards displaying average store scores, customer feedback breakdown, and reviewer data.',
       image: '/assets/galleryImage3.png',
     },
     {
-      title: 'Dedicated Platform Administration',
+      title: 'Dedicated Platform Moderation & Control',
       description:
         'System administrators maintain platform integrity with complete oversight, store listings management, and sorting controls.',
       image: '/assets/galleryImage4.png',
@@ -140,7 +140,7 @@ export default function LandingPage() {
           <img
             id="navbar-logo"
             src="/assets/logo.svg"
-            alt="Logo"
+            alt="RateHub Logo"
             className={`transition-all duration-500 ${
               isScrolled ? 'invert opacity-80' : ''
             }`}
@@ -347,7 +347,7 @@ export default function LandingPage() {
               <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
               <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
-            <p>Verified Store Ratings & Review Platform</p>
+            <p>Helping Customers Discover Top Rated Stores</p>
           </div>
 
           {/* Heading */}
@@ -357,7 +357,7 @@ export default function LandingPage() {
 
           {/* Subtitle */}
           <p className="text-white max-w-120 text-center mt-3 text-sm md:text-base">
-            Discover exceptional businesses, verified 1-to-5 star ratings, and transparent feedback tailored to your community.
+            Discover exceptional local businesses, verified 1-to-5 star ratings, and transparent feedback tailored to your community.
           </p>
 
           {/* CTA Buttons */}
@@ -366,7 +366,7 @@ export default function LandingPage() {
               to="/register"
               className="bg-zinc-50 hover:bg-zinc-200 px-6 py-2.5 rounded-md text-zinc-800 text-sm font-medium cursor-pointer transition"
             >
-              Explore Stores
+              View Stores
             </Link>
 
             {/* Animated Button */}
@@ -376,10 +376,10 @@ export default function LandingPage() {
             >
               <div className="relative overflow-hidden">
                 <span className="block transition-transform duration-200 group-hover:-translate-y-full">
-                  Sign In
+                  Rate a Store
                 </span>
                 <span className="absolute top-0 left-0 block transition-transform duration-200 group-hover:translate-y-0 translate-y-full">
-                  Sign In
+                  Rate a Store
                 </span>
               </div>
             </Link>
@@ -405,7 +405,7 @@ export default function LandingPage() {
               to="/register"
               className="mt-7 bg-zinc-950 hover:bg-zinc-900 text-white px-7 py-3 rounded-full text-sm transition cursor-pointer inline-block"
             >
-              Get Started
+              Explore Stores
             </Link>
           </div>
 
@@ -441,42 +441,42 @@ export default function LandingPage() {
             >
               <img
                 src="/assets/galleryImage1.png"
-                alt="Store 1"
+                alt="Brew & Bloom Specialty Cafe"
                 className="w-91 h-114.25 object-cover shrink-0 pointer-events-none rounded-lg"
               />
               <img
                 src="/assets/galleryImage2.png"
-                alt="Store 2"
+                alt="Artisan Boutique Apparel"
                 className="w-91 h-114.25 object-cover shrink-0 pointer-events-none rounded-lg"
               />
               <img
                 src="/assets/galleryImage3.png"
-                alt="Store 3"
+                alt="Book Nook & Lifestyle Store"
                 className="w-91 h-114.25 object-cover shrink-0 pointer-events-none rounded-lg"
               />
               <img
                 src="/assets/galleryImage4.png"
-                alt="Store 4"
+                alt="Top Rated Modern Store"
                 className="w-91 h-114.25 object-cover shrink-0 pointer-events-none rounded-lg"
               />
               <img
                 src="/assets/galleryImage1.png"
-                alt="Store 5"
+                alt="Brew & Bloom Specialty Cafe"
                 className="w-91 h-114.25 object-cover shrink-0 pointer-events-none rounded-lg"
               />
               <img
                 src="/assets/galleryImage2.png"
-                alt="Store 6"
+                alt="Artisan Boutique Apparel"
                 className="w-91 h-114.25 object-cover shrink-0 pointer-events-none rounded-lg"
               />
               <img
                 src="/assets/galleryImage3.png"
-                alt="Store 7"
+                alt="Book Nook & Lifestyle Store"
                 className="w-91 h-114.25 object-cover shrink-0 pointer-events-none rounded-lg"
               />
               <img
                 src="/assets/galleryImage4.png"
-                alt="Store 8"
+                alt="Top Rated Modern Store"
                 className="w-91 h-114.25 object-cover shrink-0 pointer-events-none rounded-lg"
               />
             </div>
@@ -765,7 +765,7 @@ export default function LandingPage() {
             </h2>
 
             <p className="text-zinc-500 text-sm max-w-100 mb-7">
-              Explore rated cafes, artisan fashion boutiques, and specialty shops in the most vibrant neighborhoods.
+              Explore top-rated cafes, artisan fashion boutiques, and specialty shops in the most vibrant neighborhoods.
             </p>
 
             <Link
