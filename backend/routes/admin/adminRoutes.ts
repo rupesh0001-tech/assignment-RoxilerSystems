@@ -9,7 +9,7 @@ const router = Router();
 const createUserSchema = z.object({
   name: z
     .string()
-    .min(20, 'Name must be at least 20 characters')
+    .min(6, 'Name must be at least 6 characters')
     .max(60, 'Name must not exceed 60 characters'),
   email: z.string().email('Invalid email address'),
   password: z

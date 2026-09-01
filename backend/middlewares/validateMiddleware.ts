@@ -18,7 +18,7 @@ const passwordValidation = z
 export const registerSchema = z.object({
   name: z
     .string()
-    .min(20, 'Name must be at least 20 characters')
+    .min(6, 'Name must be at least 6 characters')
     .max(60, 'Name must not exceed 60 characters')
     .trim(),
   email: z

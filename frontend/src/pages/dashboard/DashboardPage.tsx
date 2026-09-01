@@ -216,8 +216,8 @@ export default function DashboardPage() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setUserFormError('');
-    if (newUserName.length < 20 || newUserName.length > 60) {
-      setUserFormError('Name must be between 20 and 60 characters');
+    if (newUserName.length < 6 || newUserName.length > 60) {
+      setUserFormError('Name must be between 6 and 60 characters');
       return;
     }
     if (!newUserAddress || newUserAddress.length > 400) {
@@ -1285,7 +1285,7 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
                   <label className="text-xs font-semibold text-gray-700">Full Name</label>
-                  <span className="text-[10px] text-gray-400">{newUserName.length}/60 (Min 20)</span>
+                  <span className="text-[10px] text-gray-400">{newUserName.length}/60 (Min 6)</span>
                 </div>
                 <input
                   type="text"

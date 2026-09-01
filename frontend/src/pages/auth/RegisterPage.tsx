@@ -17,7 +17,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const isNameValid = name.length >= 20 && name.length <= 60;
+  const isNameValid = name.length >= 6 && name.length <= 60;
   const isAddressValid = address.length > 0 && address.length <= 400;
   const isPasswordValid =
     password.length >= 8 &&
@@ -30,7 +30,7 @@ export default function RegisterPage() {
     setError('');
 
     if (!isNameValid) {
-      setError('Full Name must be between 20 and 60 characters.');
+      setError('Full Name must be between 6 and 60 characters.');
       return;
     }
 
@@ -91,7 +91,7 @@ export default function RegisterPage() {
                     isNameValid ? 'text-green-600 font-medium' : 'text-gray-400'
                   }`}
                 >
-                  {name.length}/60 (Min 20)
+                  {name.length}/60 (Min 6)
                 </span>
               </div>
               <input
