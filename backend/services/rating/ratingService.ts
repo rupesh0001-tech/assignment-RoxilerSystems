@@ -2,7 +2,7 @@ import { prisma } from '../../configs/db';
 import { AppError } from '../../middlewares/errorMiddleware';
 
 export class RatingService {
-  async submitRating(userId: string, storeId: string, value: number) {
+  async submitRating(userId: string, storeId: string, value: number, comment?: string) {
     if (value < 1 || value > 5) {
       throw new AppError('Rating must be an integer between 1 and 5', 400);
     }
@@ -15,7 +15,6 @@ export class RatingService {
       throw new AppError('Store not found', 404);
     }
 
-    // Upsert rating (if user already rated this store, modify rating; else create)
     const rating = await prisma.rating.upsert({
       where: {
         userId_storeId: {
@@ -25,11 +24,13 @@ export class RatingService {
       },
       update: {
         value,
+        comment: comment !== undefined ? comment : undefined,
       },
       create: {
         userId,
         storeId,
         value,
+        comment: comment || null,
       },
       include: {
         store: {
@@ -41,39 +42,61 @@ export class RatingService {
       },
     });
 
-    // Recompute store averages
-    const allRatings = await prisma.rating.findMany({
-      where: { storeId },
-    });
-    const totalRatings = allRatings.length;
-    const averageRating = (
-      allRatings.reduce((acc, r) => acc + r.value, 0) / totalRatings
-    ).toFixed(1);
-
-    return {
-      rating,
-      averageRating: Number(averageRating),
-      totalRatings,
-    };
+    return rating;
   }
 
-  async getMyRatings(userId: string) {
-    const ratings = await prisma.rating.findMany({
-      where: { userId },
+  async getStoreReviews(storeId: string) {
+    const store = await prisma.store.findUnique({
+      where: { id: storeId },
       include: {
-        store: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            address: true,
+        ratings: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                address: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
           },
         },
       },
-      orderBy: { updatedAt: 'desc' },
     });
 
-    return ratings;
+    if (!store) {
+      throw new AppError('Store not found', 404);
+    }
+
+    const totalRatings = store.ratings.length;
+    const averageRating =
+      totalRatings > 0
+        ? Number(
+            (
+              store.ratings.reduce((acc, r) => acc + r.value, 0) / totalRatings
+            ).toFixed(1)
+          )
+        : 0;
+
+    return {
+      storeId: store.id,
+      storeName: store.name,
+      averageRating,
+      totalRatings,
+      reviews: store.ratings.map((r) => ({
+        id: r.id,
+        value: r.value,
+        comment: r.comment,
+        createdAt: r.createdAt,
+        user: {
+          id: r.user.id,
+          name: r.user.name,
+          address: r.user.address,
+        },
+      })),
+    };
   }
 
   async getStoreOwnerReviews(ownerId: string) {
@@ -91,39 +114,47 @@ export class RatingService {
               },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: {
+            createdAt: 'desc',
+          },
         },
       },
     });
 
     if (!store) {
       return {
-        store: null,
+        storeName: null,
         averageRating: 0,
         totalRatings: 0,
         ratings: [],
       };
     }
 
-    const count = store.ratings.length;
-    const sum = store.ratings.reduce((acc, r) => acc + r.value, 0);
-    const avg = count > 0 ? Number((sum / count).toFixed(1)) : 0;
+    const totalRatings = store.ratings.length;
+    const averageRating =
+      totalRatings > 0
+        ? Number(
+            (
+              store.ratings.reduce((acc, r) => acc + r.value, 0) / totalRatings
+            ).toFixed(1)
+          )
+        : 0;
 
     return {
-      store: {
-        id: store.id,
-        name: store.name,
-        email: store.email,
-        address: store.address,
-      },
-      averageRating: avg,
-      totalRatings: count,
+      storeName: store.name,
+      averageRating,
+      totalRatings,
       ratings: store.ratings.map((r) => ({
         id: r.id,
         value: r.value,
+        comment: r.comment,
         createdAt: r.createdAt,
-        updatedAt: r.updatedAt,
-        user: r.user,
+        user: {
+          id: r.user.id,
+          name: r.user.name,
+          email: r.user.email,
+          address: r.user.address,
+        },
       })),
     };
   }

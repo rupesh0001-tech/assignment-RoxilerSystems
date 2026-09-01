@@ -7,32 +7,35 @@ import { z } from 'zod';
 const router = Router();
 
 const submitRatingSchema = z.object({
-  storeId: z.string().uuid('Invalid store ID'),
-  value: z.number().int().min(1, 'Rating must be at least 1').max(5, 'Rating cannot exceed 5').optional(),
-  rating: z.number().int().min(1, 'Rating must be at least 1').max(5, 'Rating cannot exceed 5').optional(),
-}).refine((data) => data.value !== undefined || data.rating !== undefined, {
-  message: 'Rating value (1-5) is required',
+  storeId: z.string().uuid('Invalid Store ID format'),
+  value: z
+    .number()
+    .int()
+    .min(1, 'Rating must be at least 1')
+    .max(5, 'Rating must not exceed 5'),
+  comment: z
+    .string()
+    .max(500, 'Review comment must not exceed 500 characters')
+    .optional(),
 });
 
+router.use(authenticate);
+
+// Publicly logged-in review reading for any store
+router.get('/store/:storeId', ratingController.getStoreReviews);
+
+// Normal User rating submission
 router.post(
   '/',
-  authenticate,
-  authorize('NORMAL_USER'),
+  authorize('NORMAL_USER', 'SYSTEM_ADMIN'),
   validate(submitRatingSchema),
   ratingController.submitRating
 );
 
-router.get(
-  '/my',
-  authenticate,
-  authorize('NORMAL_USER'),
-  ratingController.getMyRatings
-);
-
+// Store Owner reviews retrieval
 router.get(
   '/store-owner',
-  authenticate,
-  authorize('STORE_OWNER'),
+  authorize('STORE_OWNER', 'SYSTEM_ADMIN'),
   ratingController.getStoreOwnerReviews
 );
 

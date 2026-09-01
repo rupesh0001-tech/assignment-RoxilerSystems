@@ -158,27 +158,97 @@ async function main() {
     },
   });
 
-  // 5. Ratings
+  // 5. Ratings with realistic customer reviews
   const ratingsData = [
-    { userId: user1.id, storeId: store1.id, value: 5 },
-    { userId: user2.id, storeId: store1.id, value: 5 },
-    { userId: user3.id, storeId: store1.id, value: 4 },
+    {
+      userId: user1.id,
+      storeId: store1.id,
+      value: 5,
+      comment: 'Exceptional artisanal espresso and the pastry selection is out of this world! Highly recommended.',
+    },
+    {
+      userId: user2.id,
+      storeId: store1.id,
+      value: 5,
+      comment: 'Cozy ambiance, fast Wi-Fi, and courteous baristas. My favorite spot to work in the afternoons.',
+    },
+    {
+      userId: user3.id,
+      storeId: store1.id,
+      value: 4,
+      comment: 'Great cold brews and outdoor seating. Can get a bit crowded during weekend peak hours.',
+    },
 
-    { userId: user1.id, storeId: store2.id, value: 4 },
-    { userId: user3.id, storeId: store2.id, value: 5 },
+    {
+      userId: user1.id,
+      storeId: store2.id,
+      value: 4,
+      comment: 'High quality linen jackets and attentive fitting service. Pricing is fair for designer quality.',
+    },
+    {
+      userId: user3.id,
+      storeId: store2.id,
+      value: 5,
+      comment: 'Best boutique collection in the district. Found exactly what I needed for the upcoming gala.',
+    },
 
-    { userId: user2.id, storeId: store3.id, value: 5 },
-    { userId: user4.id, storeId: store3.id, value: 4 },
+    {
+      userId: user2.id,
+      storeId: store3.id,
+      value: 5,
+      comment: 'The pour-over single origin beans are unmatched. A true sanctuary for serious coffee enthusiasts.',
+    },
+    {
+      userId: user4.id,
+      storeId: store3.id,
+      value: 4,
+      comment: 'Pleasant minimalist interior and quick service.',
+    },
 
-    { userId: user1.id, storeId: store4.id, value: 5 },
-    { userId: user2.id, storeId: store4.id, value: 5 },
-    { userId: user3.id, storeId: store4.id, value: 4 },
-    { userId: user4.id, storeId: store4.id, value: 5 },
+    {
+      userId: user1.id,
+      storeId: store4.id,
+      value: 5,
+      comment: 'Incredible book curation paired with top-tier matcha and chamomile tea.',
+    },
+    {
+      userId: user2.id,
+      storeId: store4.id,
+      value: 5,
+      comment: 'Quiet reading nooks and friendly staff who always give thoughtful book recommendations.',
+    },
+    {
+      userId: user3.id,
+      storeId: store4.id,
+      value: 4,
+      comment: 'Lovely aesthetic and great stationery collection alongside novels.',
+    },
+    {
+      userId: user4.id,
+      storeId: store4.id,
+      value: 5,
+      comment: 'My go-to sanctuary every Sunday morning.',
+    },
 
-    { userId: user3.id, storeId: store5.id, value: 4 },
-    { userId: user4.id, storeId: store5.id, value: 4 },
+    {
+      userId: user3.id,
+      storeId: store5.id,
+      value: 4,
+      comment: 'Fresh organic produce delivered daily. Very clean store layout.',
+    },
+    {
+      userId: user4.id,
+      storeId: store5.id,
+      value: 4,
+      comment: 'Wide variety of dairy-free products and healthy snacks.',
+    },
 
-    { userId: user2.id, storeId: store6.id, value: 5 },
+    {
+      userId: user2.id,
+      storeId: store6.id,
+      value: 5,
+      comment: 'Modern training equipment and super friendly trainers. 5 stars all the way!',
+    },
   ];
 
   for (const r of ratingsData) {

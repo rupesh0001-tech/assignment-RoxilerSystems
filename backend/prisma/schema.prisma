@@ -48,6 +48,7 @@ model Store {
 model Rating {
   id        String   @id @default(uuid())
   value     Int      // Between 1 and 5
+  comment   String?  // Optional written review text
   userId    String
   storeId   String
   user      User     @relation("UserRatings", fields: [userId], references: [id], onDelete: Cascade)

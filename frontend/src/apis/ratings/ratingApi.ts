@@ -1,55 +1,44 @@
 import axiosInstance from '../axiosInstance';
 
-export interface RatingResult {
-  rating: {
-    id: string;
-    value: number;
-    userId: string;
-    storeId: string;
-    createdAt: string;
-    updatedAt: string;
-    store: {
-      id: string;
-      name: string;
-    };
-  };
-  averageRating: number;
-  totalRatings: number;
-}
-
-export interface StoreOwnerReview {
+export interface RatingReviewItem {
   id: string;
   value: number;
+  comment?: string | null;
   createdAt: string;
-  updatedAt: string;
   user: {
     id: string;
     name: string;
-    email: string;
+    email?: string;
     address: string;
   };
 }
 
 export interface StoreOwnerReviewData {
-  store: {
-    id: string;
-    name: string;
-    email: string;
-    address: string;
-  } | null;
+  storeName: string | null;
   averageRating: number;
   totalRatings: number;
-  ratings: StoreOwnerReview[];
+  ratings: RatingReviewItem[];
+}
+
+export interface StorePublicReviewsData {
+  storeId: string;
+  storeName: string;
+  averageRating: number;
+  totalRatings: number;
+  reviews: RatingReviewItem[];
 }
 
 export const ratingApi = {
-  submitRating: (storeId: string, value: number) =>
-    axiosInstance.post<{ success: boolean; message: string; data: RatingResult }>(
-      '/ratings',
-      { storeId, value }
+  submitRating: (storeId: string, value: number, comment?: string) =>
+    axiosInstance.post<{ success: boolean; message: string; data: any }>('/ratings', {
+      storeId,
+      value,
+      comment,
+    }),
+  getStoreReviews: (storeId: string) =>
+    axiosInstance.get<{ success: boolean; data: StorePublicReviewsData }>(
+      `/ratings/store/${storeId}`
     ),
-  getMyRatings: () =>
-    axiosInstance.get<{ success: boolean; data: any[] }>('/ratings/my'),
   getStoreOwnerReviews: () =>
     axiosInstance.get<{ success: boolean; data: StoreOwnerReviewData }>(
       '/ratings/store-owner'

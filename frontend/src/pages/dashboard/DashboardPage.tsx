@@ -97,8 +97,14 @@ export default function DashboardPage() {
   // Rating Modal State
   const [ratingModalStore, setRatingModalStore] = useState<StoreItem | null>(null);
   const [selectedScore, setSelectedScore] = useState<number>(5);
+  const [reviewComment, setReviewComment] = useState<string>('');
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [ratingSuccessMessage, setRatingSuccessMessage] = useState('');
+
+  // Store Reviews View Modal State (View others' reviews)
+  const [reviewsModalStore, setReviewsModalStore] = useState<StoreItem | null>(null);
+  const [storeReviewsData, setStoreReviewsData] = useState<any | null>(null);
+  const [storeReviewsLoading, setStoreReviewsLoading] = useState(false);
 
   // Admin Create/Edit Store Modal
   const [storeModalMode, setStoreModalMode] = useState<'create' | 'edit'>('create');
@@ -207,23 +213,42 @@ export default function DashboardPage() {
     }
   }, [user, userSearch, userRoleFilter, userSortBy, userSortOrder]);
 
-  // Handle Rating Submit
+  // Handle Rating and Review Submit
   const handleRatingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ratingModalStore) return;
     setRatingSubmitting(true);
     try {
-      await ratingApi.submitRating(ratingModalStore.id, selectedScore);
-      setRatingSuccessMessage(`Rating of ${selectedScore}★ saved for ${ratingModalStore.name}!`);
+      await ratingApi.submitRating(
+        ratingModalStore.id,
+        selectedScore,
+        reviewComment.trim() || undefined
+      );
+      setRatingSuccessMessage(`Rating of ${selectedScore}★ and review saved for ${ratingModalStore.name}!`);
       await fetchStores();
       setTimeout(() => {
         setRatingModalStore(null);
         setRatingSuccessMessage('');
+        setReviewComment('');
       }, 1500);
     } catch (err: any) {
       alert(getApiErrorMessage(err, 'Failed to submit rating'));
     } finally {
       setRatingSubmitting(false);
+    }
+  };
+
+  // Open Store Public Reviews Modal (View others' reviews)
+  const openStoreReviewsModal = async (store: StoreItem) => {
+    setReviewsModalStore(store);
+    setStoreReviewsLoading(true);
+    try {
+      const res = await ratingApi.getStoreReviews(store.id);
+      setStoreReviewsData(res.data.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setStoreReviewsLoading(false);
     }
   };
 
@@ -783,6 +808,7 @@ export default function DashboardPage() {
                               <th className="px-6 py-3.5">Email</th>
                               <th className="px-6 py-3.5">Address</th>
                               <th className="px-6 py-3.5">Rating</th>
+                              <th className="px-6 py-3.5">Customer Review</th>
                               <th className="px-6 py-3.5 text-right">Date</th>
                             </tr>
                           </thead>
@@ -797,6 +823,13 @@ export default function DashboardPage() {
                                     <Star size={12} className="fill-amber-500 text-amber-500" />
                                     {r.value} Stars
                                   </span>
+                                </td>
+                                <td className="px-6 py-4 max-w-xs">
+                                  {r.comment ? (
+                                    <span className="text-xs text-gray-800 italic">"{r.comment}"</span>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">—</span>
+                                  )}
                                 </td>
                                 <td className="px-6 py-4 text-right text-gray-400">
                                   {new Date(r.createdAt).toLocaleDateString()}
@@ -1068,7 +1101,7 @@ export default function DashboardPage() {
                             {store.userRating ? (
                               <span className="inline-flex items-center gap-1 font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg text-[11px]">
                                 <Star size={11} className="fill-blue-600 text-blue-600" />
-                                {store.userRating}★
+                                Your Score: {store.userRating}★
                               </span>
                             ) : (
                               <span className="text-gray-400 text-[11px] italic">Not rated</span>
@@ -1076,15 +1109,25 @@ export default function DashboardPage() {
                           </div>
 
                           <div className="flex items-center gap-1.5">
+                            {/* View Reviews Button for all users */}
+                            <button
+                              onClick={() => openStoreReviewsModal(store)}
+                              className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-xs rounded-xl transition cursor-pointer"
+                              title="Read Customer Reviews"
+                            >
+                              Reviews
+                            </button>
+
                             {user?.role === 'NORMAL_USER' && (
                               <button
                                 onClick={() => {
                                   setRatingModalStore(store);
                                   setSelectedScore(store.userRating || 5);
+                                  setReviewComment('');
                                 }}
                                 className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-xs transition cursor-pointer active:scale-95"
                               >
-                                {store.userRating ? 'Modify Rating' : 'Rate Store'}
+                                {store.userRating ? 'Modify' : 'Rate'}
                               </button>
                             )}
 
@@ -1143,13 +1186,17 @@ export default function DashboardPage() {
                             <td className="px-6 py-4 text-gray-500">{store.email}</td>
                             <td className="px-6 py-4 text-gray-600">{store.address}</td>
                             <td className="px-6 py-4">
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 font-bold rounded-lg">
+                              <button
+                                onClick={() => openStoreReviewsModal(store)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold rounded-lg transition cursor-pointer"
+                                title="Click to view reviews"
+                              >
                                 <Star size={12} className="fill-amber-500 text-amber-500" />
                                 {store.averageRating || '0.0'}
                                 <span className="text-[10px] text-gray-400 font-normal">
                                   ({store.totalRatings})
                                 </span>
-                              </span>
+                              </button>
                             </td>
                             <td className="px-6 py-4">
                               {store.userRating ? (
@@ -1163,11 +1210,18 @@ export default function DashboardPage() {
                             </td>
                             <td className="px-6 py-4 text-right">
                               <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => openStoreReviewsModal(store)}
+                                  className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition cursor-pointer"
+                                >
+                                  Reviews
+                                </button>
                                 {user?.role === 'NORMAL_USER' && (
                                   <button
                                     onClick={() => {
                                       setRatingModalStore(store);
                                       setSelectedScore(store.userRating || 5);
+                                      setReviewComment('');
                                     }}
                                     className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded-lg transition cursor-pointer"
                                   >
@@ -1273,6 +1327,7 @@ export default function DashboardPage() {
                               <th className="px-6 py-3.5">Email</th>
                               <th className="px-6 py-3.5">Address</th>
                               <th className="px-6 py-3.5">Rating</th>
+                              <th className="px-6 py-3.5">Customer Review</th>
                               <th className="px-6 py-3.5 text-right">Date</th>
                             </tr>
                           </thead>
@@ -1287,6 +1342,13 @@ export default function DashboardPage() {
                                     <Star size={12} className="fill-amber-500 text-amber-500" />
                                     {r.value} Stars
                                   </span>
+                                </td>
+                                <td className="px-6 py-4 max-w-xs">
+                                  {r.comment ? (
+                                    <span className="text-xs text-gray-800 italic">"{r.comment}"</span>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">—</span>
+                                  )}
                                 </td>
                                 <td className="px-6 py-4 text-right text-gray-400">
                                   {new Date(r.createdAt).toLocaleDateString()}
@@ -1520,12 +1582,12 @@ export default function DashboardPage() {
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-gray-200 animate-in fade-in zoom-in duration-150">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="text-lg font-bold text-black">Rate {ratingModalStore.name}</h3>
+                <h3 className="text-lg font-bold text-black">Rate & Review {ratingModalStore.name}</h3>
                 <p className="text-xs text-gray-500">{ratingModalStore.address}</p>
               </div>
               <button
                 onClick={() => setRatingModalStore(null)}
-                className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -1537,8 +1599,8 @@ export default function DashboardPage() {
                 <span>{ratingSuccessMessage}</span>
               </div>
             ) : (
-              <form onSubmit={handleRatingSubmit} className="space-y-6">
-                <div className="space-y-2 text-center py-4">
+              <form onSubmit={handleRatingSubmit} className="space-y-5">
+                <div className="space-y-2 text-center py-2">
                   <label className="text-xs font-semibold text-gray-600 block">
                     Choose Your 1 to 5 Star Rating:
                   </label>
@@ -1558,12 +1620,29 @@ export default function DashboardPage() {
                       </button>
                     ))}
                   </div>
-                  <span className="text-sm font-bold text-gray-800 mt-2 block">
+                  <span className="text-sm font-bold text-gray-800 mt-1 block">
                     {selectedScore} out of 5 Stars
                   </span>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="space-y-1.5 text-left">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-semibold text-gray-700">
+                      Write a Review (Optional)
+                    </label>
+                    <span className="text-[10px] text-gray-400">{reviewComment.length}/500</span>
+                  </div>
+                  <textarea
+                    rows={3}
+                    placeholder="Share details of your experience with this store..."
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    maxLength={500}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:outline-hidden focus:ring-2 focus:ring-blue-500 resize-none"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-1">
                   <button
                     type="button"
                     onClick={() => setRatingModalStore(null)}
@@ -1577,11 +1656,128 @@ export default function DashboardPage() {
                     className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                   >
                     {ratingSubmitting && <Loader2 size={14} className="animate-spin" />}
-                    <span>Submit Rating</span>
+                    <span>Submit Review</span>
                   </button>
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* STORE PUBLIC REVIEWS MODAL (SEE OTHER PEOPLE'S REVIEWS) */}
+      {reviewsModalStore && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-gray-200 max-h-[85vh] flex flex-col animate-in fade-in zoom-in duration-150">
+            <div className="flex justify-between items-start pb-4 border-b border-gray-100">
+              <div>
+                <h3 className="text-lg font-bold text-black">{reviewsModalStore.name}</h3>
+                <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                  <MapPin size={12} className="text-gray-400" />
+                  <span>{reviewsModalStore.address}</span>
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-50 text-amber-700 font-bold rounded-lg text-xs">
+                    <Star size={12} className="fill-amber-500 text-amber-500" />
+                    {reviewsModalStore.averageRating || '0.0'} / 5.0
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    ({reviewsModalStore.totalRatings} customer ratings)
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setReviewsModalStore(null)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Reviews List Body */}
+            <div className="flex-1 overflow-y-auto py-4 space-y-4 pr-1">
+              {storeReviewsLoading ? (
+                <div className="py-12 text-center text-gray-400 flex items-center justify-center gap-2">
+                  <Loader2 size={18} className="animate-spin text-blue-600" />
+                  <span className="text-xs">Loading customer reviews...</span>
+                </div>
+              ) : !storeReviewsData || storeReviewsData.reviews.length === 0 ? (
+                <div className="py-12 text-center text-gray-500 text-xs">
+                  No written reviews or ratings submitted for this store yet.
+                </div>
+              ) : (
+                storeReviewsData.reviews.map((rev: any) => (
+                  <div
+                    key={rev.id}
+                    className="p-4 rounded-2xl bg-gray-50 border border-gray-200/70 space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold text-[10px] shadow-xs">
+                          {getInitials(rev.user.name)}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-black">{rev.user.name}</p>
+                          <p className="text-[10px] text-gray-400 truncate max-w-44">
+                            {rev.user.address}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 bg-amber-100/70 text-amber-800 font-bold px-2 py-0.5 rounded-lg text-[11px]">
+                        <Star size={11} className="fill-amber-500 text-amber-500" />
+                        <span>{rev.value}★</span>
+                      </div>
+                    </div>
+
+                    {rev.comment ? (
+                      <p className="text-xs text-gray-700 bg-white p-3 rounded-xl border border-gray-200/50 leading-relaxed">
+                        "{rev.comment}"
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-gray-400 italic">
+                        Rating score submitted without written comment.
+                      </p>
+                    )}
+
+                    <div className="text-[10px] text-gray-400 text-right">
+                      {new Date(rev.createdAt).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Modal Footer with Rate button for normal users */}
+            <div className="pt-4 border-t border-gray-100 flex justify-between items-center">
+              <button
+                type="button"
+                onClick={() => setReviewsModalStore(null)}
+                className="px-4 py-2 rounded-xl border border-gray-200 text-gray-700 font-semibold text-xs hover:bg-gray-50 cursor-pointer"
+              >
+                Close
+              </button>
+
+              {user?.role === 'NORMAL_USER' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const s = reviewsModalStore;
+                    setReviewsModalStore(null);
+                    setRatingModalStore(s);
+                    setSelectedScore(s.userRating || 5);
+                    setReviewComment('');
+                  }}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition cursor-pointer"
+                >
+                  {reviewsModalStore.userRating ? 'Modify Your Review' : 'Write a Review'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
