@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SYSTEM_ADMIN
+  STORE_OWNER
+  NORMAL_USER
+}
+
+model User {
+  id           String               @id @default(uuid())
+  name         String
+  email        String               @unique
+  passwordHash String
+  address      String
+  role         Role                 @default(NORMAL_USER)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  stores       Store[]              @relation("StoreOwner")
+  ratings      Rating[]             @relation("UserRatings")
+  resetTokens  PasswordResetToken[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Store {
+  id          String   @id @default(uuid())
+  name        String
+  email       String   @unique
+  address     String
+  ownerId     String
+  owner       User     @relation("StoreOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  ratings     Rating[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name])
+  @@index([ownerId])
+}
+
+model Rating {
+  id        String   @id @default(uuid())
+  value     Int      // Between 1 and 5
+  userId    String
+  storeId   String
+  user      User     @relation("UserRatings", fields: [userId], references: [id], onDelete: Cascade)
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, storeId])
+  @@index([storeId])
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
