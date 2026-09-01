@@ -16,7 +16,6 @@ import {
   LogOut,
   KeyRound,
   ExternalLink,
-  Coins,
   Plus,
   Loader2,
   SlidersHorizontal,
@@ -481,12 +480,6 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Verified Credits Badge matching screenshot */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50/70 border border-amber-200/70 text-amber-900 font-bold text-xs shadow-xs">
-              <Coins size={14} className="text-amber-500" />
-              <span>5.0 Credits</span>
-            </div>
-
             {/* Profile Menu */}
             <div className="relative">
               <button
