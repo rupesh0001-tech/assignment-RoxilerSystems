@@ -3,25 +3,26 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Menu,
   X,
-  Star,
+  LayoutGrid,
+  FilePlus,
+  Edit,
+  Search,
   Users,
+  Building2,
+  Star,
+  Clock,
+  Sparkles,
+  RefreshCw,
   LogOut,
   KeyRound,
-  Bell,
-  ChevronDown,
-  Building2,
-  TrendingUp,
-  MapPin,
   ExternalLink,
-  Sparkles,
-  Search,
-  Plus,
+  Coins,
   ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../../context/auth/AuthContext';
 
 export default function DashboardPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const { user, logout } = useAuth();
@@ -40,7 +41,37 @@ export default function DashboardPage() {
       : name.slice(0, 2).toUpperCase();
   };
 
-  // Sample data for demo listings
+  const quickActions = [
+    {
+      title: 'Browse Stores',
+      desc: 'Discover and rate top-rated neighborhood stores.',
+      icon: <FilePlus size={20} />,
+      color: 'purple',
+      href: '/',
+    },
+    {
+      title: 'Write Review',
+      desc: 'Submit transparent 1 to 5 star verified store ratings.',
+      icon: <Edit size={20} />,
+      color: 'blue',
+      href: '/',
+    },
+    {
+      title: 'Search Directory',
+      desc: 'Search stores by name, email, and address quickly.',
+      icon: <Search size={20} />,
+      color: 'emerald',
+      href: '/',
+    },
+    {
+      title: 'Store Analytics',
+      desc: 'View reviewer metrics, averages, and store stats.',
+      icon: <Building2 size={20} />,
+      color: 'orange',
+      href: '/dashboard',
+    },
+  ];
+
   const sampleStores = [
     {
       id: '1',
@@ -76,154 +107,186 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
-      {/* Background Radial Dots */}
+      {/* Background Subtle Radial Dot Grid */}
       <div
         className="fixed inset-0 z-0 opacity-[0.03] pointer-events-none"
         style={{
-          backgroundImage: `radial-gradient(#7c3aed 0.5px, transparent 0.5px)`,
+          backgroundImage: `radial-gradient(#001BB7 0.5px, transparent 0.5px)`,
           backgroundSize: '24px 24px',
         }}
       />
 
-      {/* Sidebar matching design.txt */}
+      {/* Sidebar matching screenshot */}
       <aside
         className={`${
-          sidebarOpen ? 'w-64' : 'w-20'
-        } bg-white border-r border-gray-200 transition-all duration-300 flex flex-col z-20 shrink-0`}
+          isSidebarOpen ? 'w-64' : 'w-0 -translate-x-full lg:w-20 lg:translate-x-0'
+        } bg-white border-r border-gray-200 transition-all duration-300 flex flex-col z-30 shrink-0 h-full select-none`}
       >
-        {/* Brand */}
-        <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-          {sidebarOpen ? (
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-sm">
-                R
-              </div>
-              <span className="font-bold text-lg text-black">
-                Rate<span className="text-purple-600">Hub</span>
-              </span>
-            </Link>
-          ) : (
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white font-black text-sm mx-auto shadow-sm">
-              R
-            </div>
-          )}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
-          >
-            {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
-          </button>
+        {/* Brand Header */}
+        <div className="h-16 px-6 border-b border-gray-100 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-1.5 font-bold text-xl tracking-tight text-black">
+            <span>RateHub</span>
+            <span className="w-2 h-2 rounded-full bg-blue-600 inline-block mb-1"></span>
+          </Link>
         </div>
 
-        {/* Navigation Items */}
-        <nav className="flex-1 p-3 space-y-1">
-          <Link
-            to="/dashboard"
-            className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-purple-50 text-purple-700 font-semibold text-sm transition"
-          >
-            <TrendingUp size={18} className="text-purple-600" />
-            {sidebarOpen && <span>Dashboard</span>}
-          </Link>
-
-          <Link
-            to="/change-password"
-            className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-gray-600 hover:text-black hover:bg-gray-100 font-medium text-sm transition"
-          >
-            <KeyRound size={18} className="text-gray-400" />
-            {sidebarOpen && <span>Change Password</span>}
-          </Link>
-
-          <Link
-            to="/"
-            className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-gray-600 hover:text-black hover:bg-gray-100 font-medium text-sm transition"
-          >
-            <ExternalLink size={18} className="text-gray-400" />
-            {sidebarOpen && <span>Landing Page</span>}
-          </Link>
-        </nav>
-
-        {/* User Card at bottom */}
-        <div className="p-3 border-t border-gray-100">
-          <div className="flex items-center gap-3 p-2 rounded-xl bg-gray-50 mb-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm">
-              {getInitials(user?.name)}
-            </div>
-            {sidebarOpen && (
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-gray-900 truncate">
-                  {user?.name}
-                </p>
-                <p className="text-[10px] text-purple-600 font-semibold uppercase tracking-wider">
-                  {user?.role === 'SYSTEM_ADMIN'
-                    ? 'Admin'
-                    : user?.role === 'STORE_OWNER'
-                    ? 'Store Owner'
-                    : 'Normal User'}
-                </p>
-              </div>
-            )}
+        {/* Sidebar Navigation */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          {/* Dashboard Section */}
+          <div>
+            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-3 block mb-2">
+              DASHBOARD
+            </span>
+            <Link
+              to="/dashboard"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-blue-50 text-blue-600 font-semibold text-sm transition"
+            >
+              <LayoutGrid size={18} />
+              <span>Overview</span>
+            </Link>
           </div>
 
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
-          >
-            <LogOut size={16} />
-            {sidebarOpen && <span>Sign Out</span>}
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Column */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
-        {/* Header matching design.txt */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shrink-0">
+          {/* Stores & Ratings Section */}
           <div>
-            <h1 className="text-xl font-bold text-black">Dashboard Overview</h1>
-            <p className="text-xs text-gray-500">
-              Signed in as{' '}
-              <span className="font-semibold text-purple-600">
+            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-3 block mb-2">
+              STORES & RATINGS
+            </span>
+            <div className="space-y-1 text-sm font-medium text-gray-600">
+              <Link
+                to="/"
+                className="flex items-center gap-3 px-3.5 py-2 rounded-xl hover:bg-gray-100 hover:text-black transition"
+              >
+                <Search size={18} className="text-gray-400" />
+                <span>Browse Stores</span>
+              </Link>
+              <Link
+                to="/"
+                className="flex items-center gap-3 px-3.5 py-2 rounded-xl hover:bg-gray-100 hover:text-black transition"
+              >
+                <Star size={18} className="text-gray-400" />
+                <span>Top Rated</span>
+              </Link>
+              <Link
+                to="/dashboard"
+                className="flex items-center gap-3 px-3.5 py-2 rounded-xl hover:bg-gray-100 hover:text-black transition"
+              >
+                <ShieldCheck size={18} className="text-gray-400" />
+                <span>My Reviews</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Administration Section */}
+          {user?.role === 'SYSTEM_ADMIN' && (
+            <div>
+              <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-3 block mb-2">
+                ADMINISTRATION
+              </span>
+              <div className="space-y-1 text-sm font-medium text-gray-600">
+                <Link
+                  to="/dashboard"
+                  className="flex items-center gap-3 px-3.5 py-2 rounded-xl hover:bg-gray-100 hover:text-black transition"
+                >
+                  <Building2 size={18} className="text-gray-400" />
+                  <span>Store Directory</span>
+                </Link>
+                <Link
+                  to="/dashboard"
+                  className="flex items-center gap-3 px-3.5 py-2 rounded-xl hover:bg-gray-100 hover:text-black transition"
+                >
+                  <Users size={18} className="text-gray-400" />
+                  <span>User Management</span>
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Settings Section */}
+          <div>
+            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-3 block mb-2">
+              SETTINGS
+            </span>
+            <div className="space-y-1 text-sm font-medium text-gray-600">
+              <Link
+                to="/change-password"
+                className="flex items-center gap-3 px-3.5 py-2 rounded-xl hover:bg-gray-100 hover:text-black transition"
+              >
+                <KeyRound size={18} className="text-gray-400" />
+                <span>Change Password</span>
+              </Link>
+              <Link
+                to="/"
+                className="flex items-center gap-3 px-3.5 py-2 rounded-xl hover:bg-gray-100 hover:text-black transition"
+              >
+                <ExternalLink size={18} className="text-gray-400" />
+                <span>Landing Page</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* User Card at bottom matching screenshot */}
+        <div className="p-4 border-t border-gray-100">
+          <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-gray-50 border border-gray-200/60 shadow-xs">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold text-xs shadow-sm shrink-0">
+              {getInitials(user?.name)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-gray-900 truncate">
+                {user?.name || 'Rupesh Jagtap'}
+              </p>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
                 {user?.role === 'SYSTEM_ADMIN'
-                  ? 'System Administrator'
+                  ? 'System Admin'
                   : user?.role === 'STORE_OWNER'
                   ? 'Store Owner'
                   : 'Normal User'}
-              </span>
-            </p>
+              </p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Container */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
+        {/* Header matching screenshot */}
+        <header className="h-16 bg-white border-b border-gray-200 px-6 lg:px-8 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 rounded-xl text-gray-600 hover:bg-gray-100 transition cursor-pointer"
+            >
+              {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+            <span className="text-sm font-semibold text-gray-700">
+              Dashboard Overview
+            </span>
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Notification Bell */}
-            <button className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-xl transition cursor-pointer">
-              <Bell size={18} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-purple-600 rounded-full"></span>
-            </button>
+            {/* Verified Credits Badge matching screenshot */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50/70 border border-amber-200/70 text-amber-900 font-bold text-xs shadow-xs">
+              <Coins size={14} className="text-amber-500" />
+              <span>5.0 Credits</span>
+            </div>
 
-            {/* Profile Dropdown */}
+            {/* Profile Menu */}
             <div className="relative">
               <button
                 onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-gray-100 rounded-xl transition cursor-pointer border border-gray-200"
+                className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold text-xs ring-2 ring-blue-100 shadow-sm cursor-pointer"
               >
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
-                  {getInitials(user?.name)}
-                </div>
-                <div className="text-left hidden sm:block">
-                  <span className="text-xs font-semibold text-gray-900 block leading-tight">
-                    {user?.name?.split(' ')[0]}
-                  </span>
-                </div>
-                <ChevronDown size={14} className="text-gray-400" />
+                {getInitials(user?.name)}
               </button>
 
               {profileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-200 py-1.5 z-30">
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-200 py-1.5 z-50">
                   <div className="px-4 py-2.5 border-b border-gray-100">
-                    <p className="text-xs text-gray-500">Account</p>
+                    <p className="text-xs text-gray-500">Signed in as</p>
                     <p className="text-sm font-bold text-gray-900 truncate">
                       {user?.name}
                     </p>
-                    <p className="text-xs text-purple-600 font-medium">
+                    <p className="text-xs text-blue-600 font-medium truncate">
                       {user?.email}
                     </p>
                   </div>
@@ -248,243 +311,150 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        {/* Dashboard Main Scrollable Area */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8">
-          {/* Welcome Banner matching design.txt */}
-          <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm backdrop-blur-xl">
-            <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-purple-100">
-                  <Sparkles size={22} className="animate-pulse" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-black">
-                    Welcome, {user?.name}!
-                  </h2>
-                  <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">
-                    <MapPin size={14} className="text-gray-400" />
-                    <span>{user?.address}</span>
+        {/* Dashboard Main Content matching screenshot */}
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-10 max-w-6xl w-full mx-auto">
+          {/* Quick Actions */}
+          <div>
+            <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
+              QUICK ACTIONS
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {quickActions.map((action) => (
+                <Link
+                  key={action.title}
+                  to={action.href}
+                  className="text-left flex flex-col items-start p-6 rounded-2xl border border-gray-200 bg-white hover:border-blue-500/50 hover:shadow-md transition-all group shadow-xs"
+                >
+                  <div
+                    className={`p-3 rounded-xl transition-all group-hover:scale-110 mb-4 ${
+                      action.color === 'purple'
+                        ? 'bg-purple-50 text-purple-600'
+                        : action.color === 'blue'
+                        ? 'bg-blue-50 text-blue-600'
+                        : action.color === 'emerald'
+                        ? 'bg-emerald-50 text-emerald-600'
+                        : 'bg-orange-50 text-orange-600'
+                    }`}
+                  >
+                    {action.icon}
+                  </div>
+                  <h3 className="font-bold text-black text-sm mb-1">
+                    {action.title}
+                  </h3>
+                  <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                    {action.desc}
                   </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Link
-                  to="/change-password"
-                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition"
-                >
-                  Change Password
                 </Link>
-                <Link
-                  to="/"
-                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm transition"
-                >
-                  Explore Directory
-                </Link>
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Quick Stats Tracker matching design.txt */}
+          {/* Recent Versions / Ratings Card matching screenshot */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-800 uppercase tracking-wider mb-4">
-              Platform Metrics & Stats
-            </h3>
-
-            {user?.role === 'SYSTEM_ADMIN' && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-gray-500 font-medium">
-                      Total Registered Users
-                    </span>
-                    <p className="text-3xl font-bold text-black mt-2">3</p>
-                    <span className="text-[11px] text-green-600 font-semibold mt-1 inline-block">
-                      +100% Verified
-                    </span>
-                  </div>
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <Users size={24} />
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-gray-500 font-medium">
-                      Total Stores Registered
-                    </span>
-                    <p className="text-3xl font-bold text-black mt-2">3</p>
-                    <span className="text-[11px] text-purple-600 font-semibold mt-1 inline-block">
-                      All Active
-                    </span>
-                  </div>
-                  <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                    <Building2 size={24} />
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-gray-500 font-medium">
-                      Submitted Store Ratings
-                    </span>
-                    <p className="text-3xl font-bold text-black mt-2">113</p>
-                    <span className="text-[11px] text-amber-600 font-semibold mt-1 inline-block">
-                      1-5 Star Scale
-                    </span>
-                  </div>
-                  <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                    <Star size={24} />
-                  </div>
-                </div>
+            <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
+              RECENT RATINGS & REVIEWS
+            </h2>
+            <div className="rounded-2xl border border-gray-200 bg-white p-12 flex flex-col items-center justify-center text-center shadow-xs">
+              <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
+                <Clock size={24} />
               </div>
-            )}
-
-            {user?.role === 'STORE_OWNER' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-gray-500 font-medium">
-                      Average Store Rating
-                    </span>
-                    <p className="text-3xl font-bold text-black mt-2">
-                      {user?.storeInfo?.averageRating || '4.8'}{' '}
-                      <span className="text-sm font-normal text-gray-400">
-                        / 5.0
-                      </span>
-                    </p>
-                    <span className="text-[11px] text-green-600 font-semibold mt-1 inline-block">
-                      Excellent Standing
-                    </span>
-                  </div>
-                  <div className="w-12 h-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center">
-                    <Star size={24} />
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-gray-500 font-medium">
-                      Total Customer Reviews
-                    </span>
-                    <p className="text-3xl font-bold text-black mt-2">
-                      {user?.storeInfo?.totalRatings || '34'}
-                    </p>
-                    <span className="text-[11px] text-blue-600 font-semibold mt-1 inline-block">
-                      Verified Shoppers
-                    </span>
-                  </div>
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <Users size={24} />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {user?.role === 'NORMAL_USER' && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-gray-500 font-medium">
-                      My Submitted Ratings
-                    </span>
-                    <p className="text-3xl font-bold text-black mt-2">5</p>
-                    <span className="text-[11px] text-purple-600 font-semibold mt-1 inline-block">
-                      Active Reviews
-                    </span>
-                  </div>
-                  <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                    <Star size={24} />
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-gray-500 font-medium">
-                      Average Score Given
-                    </span>
-                    <p className="text-3xl font-bold text-black mt-2">
-                      4.7 <span className="text-sm text-gray-400 font-normal">/ 5.0</span>
-                    </p>
-                    <span className="text-[11px] text-green-600 font-semibold mt-1 inline-block">
-                      High Quality Feedback
-                    </span>
-                  </div>
-                  <div className="w-12 h-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center">
-                    <ShieldCheck size={24} />
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-gray-500 font-medium">
-                      Stores Explored
-                    </span>
-                    <p className="text-3xl font-bold text-black mt-2">12</p>
-                    <span className="text-[11px] text-blue-600 font-semibold mt-1 inline-block">
-                      In Your Neighborhood
-                    </span>
-                  </div>
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <Building2 size={24} />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Quick Actions Cards matching design.txt */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-800 uppercase tracking-wider mb-4">
-              Quick Actions
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <h3 className="text-base font-bold text-black mb-1">
+                No Reviews Submitted Yet
+              </h3>
+              <p className="text-xs text-gray-500 max-w-sm mb-6 leading-relaxed">
+                Explore registered neighborhood stores and submit your first verified 1 to 5 star rating.
+              </p>
               <Link
                 to="/"
-                className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl p-5 text-white shadow-sm hover:shadow-md transition cursor-pointer flex flex-col justify-between h-32"
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold">Browse Stores</span>
-                  <Plus size={18} />
-                </div>
-                <p className="text-xs text-purple-100">
-                  Find & rate neighborhood cafes and boutiques
-                </p>
+                Browse & Rate Stores
               </Link>
+            </div>
+          </div>
 
-              <Link
-                to="/change-password"
-                className="bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl p-5 text-white shadow-sm hover:shadow-md transition cursor-pointer flex flex-col justify-between h-32"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold">Security & Password</span>
-                  <KeyRound size={18} />
+          {/* Bottom 2-Column: Sync Profile & Tracker matching screenshot */}
+          <div>
+            <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
+              SYNC STORE DIRECTORY & RATING METRICS
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left Sync Card */}
+              <div className="lg:col-span-2 rounded-2xl border border-gray-200 bg-white p-6 shadow-xs flex flex-col justify-between relative overflow-hidden">
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 text-blue-600 font-bold text-xs mb-3">
+                    <Sparkles size={16} className="animate-pulse" />
+                    <span>Store Directory Active</span>
+                  </div>
+                  <h3 className="text-base font-bold text-black mb-2">
+                    Your Store Reviews & Ratings are Synced
+                  </h3>
+                  <p className="text-xs text-gray-500 leading-relaxed mb-6">
+                    You can discover verified stores, submit transparent 1-to-5 star scores, and modify your past reviews anytime. Use the sync button below to refresh real-time metrics.
+                  </p>
                 </div>
-                <p className="text-xs text-blue-100">
-                  Update your authentication credentials securely
-                </p>
-              </Link>
 
-              <div className="bg-gradient-to-br from-emerald-600 to-teal-600 rounded-2xl p-5 text-white shadow-sm flex flex-col justify-between h-32">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold">Verified Ratings</span>
-                  <Star size={18} />
+                <div className="relative z-10">
+                  <Link
+                    to="/"
+                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition-all inline-flex items-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <RefreshCw size={14} />
+                    <span>Sync Changes</span>
+                  </Link>
                 </div>
-                <p className="text-xs text-emerald-100">
-                  All 1-to-5 star scores are cryptographically tracked
-                </p>
+              </div>
+
+              {/* Right Limits / Stats Tracker Card */}
+              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-blue-600 font-bold text-xs mb-4">
+                    <Sparkles size={16} />
+                    <span>Rating Activity Tracker</span>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between items-center text-xs font-semibold text-gray-700 mb-1.5">
+                        <span>Ratings Submitted</span>
+                        <span className="text-black font-bold">5</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-600 rounded-full"
+                          style={{ width: '60%' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between items-center text-xs font-semibold text-gray-700 mb-1.5">
+                        <span>Average Score Given</span>
+                        <span className="text-blue-600 font-bold">4.8 / 5.0</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full"
+                          style={{ width: '96%' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-gray-100 mt-4 text-[11px] text-gray-500 flex justify-between">
+                  <span>Stores Explored</span>
+                  <span className="font-bold text-gray-800">12 Stores</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Stores Directory Table */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          {/* Searchable Stores Directory Table */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
             <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h3 className="text-base font-bold text-black">
+                <h3 className="text-sm font-bold text-black">
                   Registered Stores Directory
                 </h3>
                 <p className="text-xs text-gray-500">
@@ -494,7 +464,7 @@ export default function DashboardPage() {
 
               <div className="relative w-full sm:w-64">
                 <Search
-                  size={16}
+                  size={15}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                 />
                 <input
@@ -502,7 +472,7 @@ export default function DashboardPage() {
                   placeholder="Search stores..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-black focus:outline-hidden focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-black focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -514,14 +484,14 @@ export default function DashboardPage() {
                     <th className="px-6 py-3.5">Store Name</th>
                     <th className="px-6 py-3.5">Contact Email</th>
                     <th className="px-6 py-3.5">Address</th>
-                    <th className="px-6 py-3.5">Average Rating</th>
+                    <th className="px-6 py-3.5">Rating</th>
                     <th className="px-6 py-3.5 text-right">Reviews</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-gray-700">
                   {filteredStores.map((store) => (
                     <tr key={store.id} className="hover:bg-gray-50/70 transition">
-                      <td className="px-6 py-4 font-semibold text-black">
+                      <td className="px-6 py-4 font-bold text-black">
                         {store.name}
                       </td>
                       <td className="px-6 py-4 text-gray-500">{store.email}</td>
@@ -533,7 +503,7 @@ export default function DashboardPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right font-medium text-gray-500">
-                        {store.totalRatings} ratings
+                        {store.totalRatings} reviews
                       </td>
                     </tr>
                   ))}
