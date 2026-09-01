@@ -12,21 +12,6 @@ export function AuthBackground() {
   );
 }
 
-export function AuthBrand() {
-  return (
-    <div className="flex justify-center mb-8">
-      <Link to="/" className="flex items-center gap-2 group">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white font-black text-base shadow-md">
-          R
-        </div>
-        <span className="font-bold text-2xl tracking-tight text-black">
-          Rate<span className="text-purple-600">Hub</span>
-        </span>
-      </Link>
-    </div>
-  );
-}
-
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -65,8 +50,6 @@ export default function LoginPage() {
       <AuthBackground />
 
       <div className="w-full max-w-md relative z-10">
-        <AuthBrand />
-
         <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
           <h1 className="text-2xl font-bold text-black mb-2 text-center">
             Welcome back

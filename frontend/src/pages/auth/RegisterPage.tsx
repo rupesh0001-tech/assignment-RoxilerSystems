@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/auth/AuthContext';
 import { PasswordStrength } from '../../components/common/PasswordStrength';
-import { AuthBackground, AuthBrand } from './LoginPage';
+import { AuthBackground } from './LoginPage';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -65,8 +65,6 @@ export default function RegisterPage() {
       <AuthBackground />
 
       <div className="w-full max-w-md relative z-10">
-        <AuthBrand />
-
         <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
           <h1 className="text-2xl font-bold text-black mb-2 text-center">
             Create an account

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
 import { authApi } from '../../apis/auth/authApi';
-import { AuthBackground, AuthBrand } from './LoginPage';
+import { AuthBackground } from './LoginPage';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -41,8 +41,6 @@ export default function ForgotPasswordPage() {
       <AuthBackground />
 
       <div className="w-full max-w-md relative z-10">
-        <AuthBrand />
-
         <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
           <h1 className="text-2xl font-bold text-black mb-2 text-center">
             Reset password

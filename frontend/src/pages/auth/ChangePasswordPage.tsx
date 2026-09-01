@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Loader2, Eye, EyeOff, CheckCircle2, KeyRound } from 'lucide-react';
 import { authApi } from '../../apis/auth/authApi';
 import { PasswordStrength } from '../../components/common/PasswordStrength';
-import { AuthBackground, AuthBrand } from './LoginPage';
+import { AuthBackground } from './LoginPage';
 
 export default function ChangePasswordPage() {
   const navigate = useNavigate();
@@ -61,8 +61,6 @@ export default function ChangePasswordPage() {
       <AuthBackground />
 
       <div className="w-full max-w-md relative z-10">
-        <AuthBrand />
-
         <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
           <div className="flex items-center justify-center mb-3">
             <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
