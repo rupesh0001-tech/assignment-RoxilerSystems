@@ -6,114 +6,72 @@ RateHub is a full-stack, multi-role web application designed for discovering loc
 
 ## 🏗️ System Architecture Diagram
 
-```mermaid
-graph TD
-    subgraph Client_Layer ["Client Layer (React 18 + Vite + Tailwind CSS)"]
-        UI_Landing["Public Landing Page & Showcase"]
-        UI_Auth["Authentication Flow<br/>(Login, Register, Password Reset)"]
-        UI_AdminDash["Admin Dashboard<br/>(Metrics, User CRUD, Store CRUD)"]
-        UI_OwnerDash["Store Owner Hub<br/>(Store Analytics, Customer Feedback)"]
-        UI_UserDash["Normal User Dashboard<br/>(Store Explorer, Star Ratings, Reviews)"]
-    end
+![RateHub System Architecture](./architecture_diagram.svg)
 
-    subgraph API_Gateway ["API Routing & Security Layer (Express + Node.js)"]
-        MW_Cors["CORS & Request Parsing"]
-        MW_Auth["JWT Authentication Middleware"]
-        MW_RBAC["Role-Based Access Control (RBAC)"]
-        MW_Zod["Zod Input Validation Middleware"]
-    end
+### Textual Architecture Flow
 
-    subgraph Backend_Services ["Business Logic & Controllers"]
-        Ctrl_Auth["Auth Service & Controller<br/>• Register & Login<br/>• JWT Tokens<br/>• Password Updates"]
-        Ctrl_Store["Store Service & Controller<br/>• Listing & Search<br/>• Sorting & Filtering<br/>• Store Management"]
-        Ctrl_Rating["Rating & Review Service<br/>• 1-5 Star Upserts<br/>• Written Reviews<br/>• Owner Feedback Retrieval"]
-        Ctrl_Admin["Admin Service & Controller<br/>• Platform Metrics<br/>• User CRUD<br/>• Store Assignment"]
-    end
-
-    subgraph Database_Layer ["Persistence Layer (PostgreSQL + Prisma ORM)"]
-        DB_User[("User Entity<br/>• Admin, Owner, Normal User")]
-        DB_Store[("Store Entity<br/>• Name, Email, Address, Owner")]
-        DB_Rating[("Rating & Review Entity<br/>• Value 1-5, Comment, User, Store")]
-        DB_Token[("Password Reset Token Entity")]
-    end
-
-    %% Client to API
-    UI_Landing -->|HTTP Requests| MW_Cors
-    UI_Auth -->|Sign In / Up| MW_Cors
-    UI_AdminDash -->|Bearer Token Requests| MW_Cors
-    UI_OwnerDash -->|Bearer Token Requests| MW_Cors
-    UI_UserDash -->|Bearer Token Requests| MW_Cors
-
-    MW_Cors --> MW_Auth
-    MW_Auth --> MW_RBAC
-    MW_RBAC --> MW_Zod
-
-    %% API to Controllers
-    MW_Zod --> Ctrl_Auth
-    MW_Zod --> Ctrl_Store
-    MW_Zod --> Ctrl_Rating
-    MW_Zod --> Ctrl_Admin
-
-    %% Controllers to Database Layer via Prisma
-    Ctrl_Auth --> DB_User
-    Ctrl_Auth --> DB_Token
-    Ctrl_Store --> DB_Store
-    Ctrl_Rating --> DB_Rating
-    Ctrl_Rating --> DB_Store
-    Ctrl_Admin --> DB_User
-    Ctrl_Admin --> DB_Store
-    Ctrl_Admin --> DB_Rating
+```text
++---------------------------------------------------------------------------------------+
+|                       1. CLIENT TIER (React 18 + Vite + Tailwind CSS)                 |
+|  [Landing Page]  [Auth Pages]  [Normal User View]  [Store Owner Hub]  [Admin Dash]   |
++------------------------------------------+--------------------------------------------+
+                                           | HTTP REST API (Bearer JWT)
+                                           v
++---------------------------------------------------------------------------------------+
+|                    2. API GATEWAY & SECURITY (Express.js + TypeScript)                |
+|       [CORS & Body Parser]  -->  [JWT Auth Guard]  -->  [RBAC]  -->  [Zod Validation]  |
++------------------------------------------+--------------------------------------------+
+                                           | Validated Requests
+                                           v
++---------------------------------------------------------------------------------------+
+|                    3. BUSINESS SERVICES & CONTROLLERS TIER                            |
+|    +-----------------+  +------------------+  +-----------------+  +---------------+  |
+|    |  Auth Service   |  |  Store Service   |  | Rating Service  |  | Admin Service |  |
+|    | • Login/Signup  |  | • Search/Filter  |  | • 1-5 Star Feed |  | • Metrics     |  |
+|    | • Reset Tokens  |  | • Multi-Sort     |  | • Review Text   |  | • User/Store  |  |
+|    +-----------------+  +------------------+  +-----------------+  +---------------+  |
++------------------------------------------+--------------------------------------------+
+                                           | Prisma ORM Client
+                                           v
++---------------------------------------------------------------------------------------+
+|                    4. PERSISTENCE LAYER (PostgreSQL + Prisma ORM)                     |
+|           [User Table]        [Store Table]        [Rating Table]       [Reset Token] |
++---------------------------------------------------------------------------------------+
 ```
 
 ---
 
 ## 🗄️ Database Entity Relationship Diagram (ERD)
 
-```mermaid
-erDiagram
-    USER ||--o{ STORE : "owns (StoreOwner)"
-    USER ||--o{ RATING : "submits (UserRatings)"
-    USER ||--o{ PASSWORD_RESET_TOKEN : "has"
-    STORE ||--o{ RATING : "receives"
+![Database ERD](./erd_diagram.svg)
 
-    USER {
-        string id PK
-        string name "6-60 chars"
-        string email UK
-        string passwordHash
-        string address "Max 400 chars"
-        enum role "SYSTEM_ADMIN | STORE_OWNER | NORMAL_USER"
-        datetime createdAt
-        datetime updatedAt
-    }
+### Database Entities & Keys
 
-    STORE {
-        string id PK
-        string name
-        string email UK
-        string address "Max 400 chars"
-        string ownerId FK
-        datetime createdAt
-        datetime updatedAt
-    }
-
-    RATING {
-        string id PK
-        int value "1 to 5 Stars"
-        string comment "Optional Review"
-        string userId FK
-        string storeId FK
-        datetime createdAt
-        datetime updatedAt
-    }
-
-    PASSWORD_RESET_TOKEN {
-        string id PK
-        string token UK
-        string userId FK
-        datetime expiresAt
-        datetime createdAt
-    }
+```text
++------------------------+          +------------------------+
+|         USER           |  1    N  |         STORE          |
+|------------------------|<---------|------------------------|
+| id (PK, UUID)          |  owns    | id (PK, UUID)          |
+| name (6-60 chars)      |          | name (String)          |
+| email (Unique)         |          | email (Unique)         |
+| passwordHash           |          | address (Max 400)      |
+| address (Max 400)      |          | ownerId (FK -> User)   |
+| role (ADMIN/OWNER/USER)|          +-----------+------------+
++-----------+------------+                      | 1
+            | 1                                 |
+            | submits                           | receives
+            | N                                 | N
+            v                                   v
++------------------------------------------------------------+
+|                           RATING                           |
+|------------------------------------------------------------|
+| id (PK, UUID)                                              |
+| value (Integer 1 to 5)                                     |
+| comment (Text, Optional written review)                    |
+| userId (FK -> User.id)                                     |
+| storeId (FK -> Store.id)                                   |
+| UNIQUE (userId, storeId)                                   |
++------------------------------------------------------------+
 ```
 
 ---
@@ -124,7 +82,7 @@ erDiagram
 | :--- | :---: | :---: | :---: | :---: |
 | **Browse Stores & Search Directory** | ✅ | — | ✅ | ✅ |
 | **Switch Card Grid / Table List UI** | ✅ | — | ✅ | — |
-| **Read Other People's Reviews** | ✅ | ✅ | ✅ | — |
+| **Read Other People's Written Reviews** | ✅ | ✅ | ✅ | — |
 | **Submit 1–5 Star Rating & Review** | ✅ | — | ✅ | — |
 | **Modify Past Submitted Rating** | ✅ | — | ✅ | — |
 | **View Store Average & Ratings** | ✅ | ✅ (Own Store) | ✅ | ✅ |

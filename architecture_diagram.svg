@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 680" width="100%" height="100%" style="background:#0f172a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <!-- Definitions for gradients and shadows -->
+  <defs>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+    <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#6d28d9" />
+    </linearGradient>
+    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <linearGradient id="amberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <filter id="dropShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Title -->
+  <text x="500" y="45" text-anchor="middle" fill="#f8fafc" font-size="22" font-weight="800" letter-spacing="1">RATEHUB — SYSTEM ARCHITECTURE</text>
+  <text x="500" y="70" text-anchor="middle" fill="#94a3b8" font-size="13">End-to-End Multi-Tier Application Design</text>
+
+  <!-- 1. Client Layer Box -->
+  <rect x="50" y="100" width="900" height="110" rx="16" fill="#1e293b" stroke="#3b82f6" stroke-width="2" filter="url(#dropShadow)"/>
+  <rect x="50" y="100" width="900" height="30" rx="16" fill="url(#blueGrad)"/>
+  <text x="70" y="121" fill="#ffffff" font-size="13" font-weight="700">1. CLIENT TIER (React 18 + Vite + Tailwind CSS + Lucide Icons)</text>
+
+  <!-- Client sub-components -->
+  <rect x="70" y="142" width="160" height="52" rx="10" fill="#334155" stroke="#475569" stroke-width="1"/>
+  <text x="150" y="165" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="600">Landing Page</text>
+  <text x="150" y="182" text-anchor="middle" fill="#94a3b8" font-size="10">Showcase &amp; Discover</text>
+
+  <rect x="245" y="142" width="160" height="52" rx="10" fill="#334155" stroke="#475569" stroke-width="1"/>
+  <text x="325" y="165" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="600">Auth Flow</text>
+  <text x="325" y="182" text-anchor="middle" fill="#94a3b8" font-size="10">Login / Register / Reset</text>
+
+  <rect x="420" y="142" width="160" height="52" rx="10" fill="#334155" stroke="#475569" stroke-width="1"/>
+  <text x="500" y="165" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="600">Normal User View</text>
+  <text x="500" y="182" text-anchor="middle" fill="#94a3b8" font-size="10">Rate &amp; Review Stores</text>
+
+  <rect x="595" y="142" width="160" height="52" rx="10" fill="#334155" stroke="#475569" stroke-width="1"/>
+  <text x="675" y="165" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="600">Store Owner Hub</text>
+  <text x="675" y="182" text-anchor="middle" fill="#94a3b8" font-size="10">Store Ratings &amp; Reviews</text>
+
+  <rect x="770" y="142" width="160" height="52" rx="10" fill="#334155" stroke="#475569" stroke-width="1"/>
+  <text x="850" y="165" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="600">Admin Dashboard</text>
+  <text x="850" y="182" text-anchor="middle" fill="#94a3b8" font-size="10">Metrics &amp; User/Store CRUD</text>
+
+  <!-- Arrow 1: Client to Gateway -->
+  <path d="M 500 210 L 500 240" stroke="#60a5fa" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrow)"/>
+  <text x="508" y="230" fill="#60a5fa" font-size="11" font-weight="600">HTTP REST + Bearer JWT</text>
+
+  <!-- 2. API Gateway Layer Box -->
+  <rect x="50" y="245" width="900" height="90" rx="16" fill="#1e293b" stroke="#8b5cf6" stroke-width="2" filter="url(#dropShadow)"/>
+  <rect x="50" y="245" width="900" height="30" rx="16" fill="url(#purpleGrad)"/>
+  <text x="70" y="266" fill="#ffffff" font-size="13" font-weight="700">2. API GATEWAY &amp; SECURITY LAYER (Express + TypeScript)</text>
+
+  <!-- Gateway sub-components -->
+  <rect x="70" y="285" width="200" height="40" rx="8" fill="#334155" stroke="#475569"/>
+  <text x="170" y="310" text-anchor="middle" fill="#f8fafc" font-size="11" font-weight="600">CORS &amp; JSON Body Parser</text>
+
+  <rect x="290" y="285" width="200" height="40" rx="8" fill="#334155" stroke="#475569"/>
+  <text x="390" y="310" text-anchor="middle" fill="#f8fafc" font-size="11" font-weight="600">JWT Authentication Guard</text>
+
+  <rect x="510" y="285" width="200" height="40" rx="8" fill="#334155" stroke="#475569"/>
+  <text x="610" y="310" text-anchor="middle" fill="#f8fafc" font-size="11" font-weight="600">Role-Based Access Control</text>
+
+  <rect x="730" y="285" width="200" height="40" rx="8" fill="#334155" stroke="#475569"/>
+  <text x="830" y="310" text-anchor="middle" fill="#f8fafc" font-size="11" font-weight="600">Zod Schema Validation</text>
+
+  <!-- Arrow 2: Gateway to Controllers -->
+  <path d="M 500 335 L 500 365" stroke="#a78bfa" stroke-width="2" stroke-dasharray="4,4"/>
+
+  <!-- 3. Business Logic Controllers Box -->
+  <rect x="50" y="370" width="900" height="125" rx="16" fill="#1e293b" stroke="#10b981" stroke-width="2" filter="url(#dropShadow)"/>
+  <rect x="50" y="370" width="900" height="30" rx="16" fill="url(#emeraldGrad)"/>
+  <text x="70" y="391" fill="#ffffff" font-size="13" font-weight="700">3. BUSINESS SERVICES &amp; CONTROLLERS TIER</text>
+
+  <!-- Controllers -->
+  <rect x="70" y="412" width="200" height="70" rx="10" fill="#334155" stroke="#475569"/>
+  <text x="170" y="435" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">Auth Service</text>
+  <text x="170" y="452" text-anchor="middle" fill="#cbd5e1" font-size="10">• Login &amp; Register (6-60 chars)</text>
+  <text x="170" y="468" text-anchor="middle" fill="#cbd5e1" font-size="10">• Password Hash &amp; Reset</text>
+
+  <rect x="290" y="412" width="200" height="70" rx="10" fill="#334155" stroke="#475569"/>
+  <text x="390" y="435" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">Store Service</text>
+  <text x="390" y="452" text-anchor="middle" fill="#cbd5e1" font-size="10">• Directory Search &amp; Filter</text>
+  <text x="390" y="468" text-anchor="middle" fill="#cbd5e1" font-size="10">• Multi-Criteria Sorting</text>
+
+  <rect x="510" y="412" width="200" height="70" rx="10" fill="#334155" stroke="#475569"/>
+  <text x="610" y="435" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">Rating Service</text>
+  <text x="610" y="452" text-anchor="middle" fill="#cbd5e1" font-size="10">• 1-5 Star Submissions</text>
+  <text x="610" y="468" text-anchor="middle" fill="#cbd5e1" font-size="10">• Written Reviews Feed</text>
+
+  <rect x="730" y="412" width="200" height="70" rx="10" fill="#334155" stroke="#475569"/>
+  <text x="830" y="435" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">Admin Service</text>
+  <text x="830" y="452" text-anchor="middle" fill="#cbd5e1" font-size="10">• Real-Time Metrics</text>
+  <text x="830" y="468" text-anchor="middle" fill="#cbd5e1" font-size="10">• User &amp; Store Full CRUD</text>
+
+  <!-- Arrow 3: Controllers to Database -->
+  <path d="M 500 495 L 500 525" stroke="#34d399" stroke-width="2" stroke-dasharray="4,4"/>
+  <text x="508" y="515" fill="#34d399" font-size="11" font-weight="600">Prisma ORM Client</text>
+
+  <!-- 4. Persistence Layer Box -->
+  <rect x="50" y="530" width="900" height="120" rx="16" fill="#1e293b" stroke="#f59e0b" stroke-width="2" filter="url(#dropShadow)"/>
+  <rect x="50" y="530" width="900" height="30" rx="16" fill="url(#amberGrad)"/>
+  <text x="70" y="551" fill="#ffffff" font-size="13" font-weight="700">4. PERSISTENCE LAYER (PostgreSQL + Prisma ORM)</text>
+
+  <!-- Database Tables -->
+  <rect x="70" y="572" width="200" height="65" rx="10" fill="#334155" stroke="#475569"/>
+  <text x="170" y="595" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">User Table</text>
+  <text x="170" y="612" text-anchor="middle" fill="#cbd5e1" font-size="10">id, name, email, passwordHash,</text>
+  <text x="170" y="626" text-anchor="middle" fill="#cbd5e1" font-size="10">address, role</text>
+
+  <rect x="290" y="572" width="200" height="65" rx="10" fill="#334155" stroke="#475569"/>
+  <text x="390" y="595" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">Store Table</text>
+  <text x="390" y="612" text-anchor="middle" fill="#cbd5e1" font-size="10">id, name, email, address,</text>
+  <text x="390" y="626" text-anchor="middle" fill="#cbd5e1" font-size="10">ownerId (FK)</text>
+
+  <rect x="510" y="572" width="200" height="65" rx="10" fill="#334155" stroke="#475569"/>
+  <text x="610" y="595" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">Rating Table</text>
+  <text x="610" y="612" text-anchor="middle" fill="#cbd5e1" font-size="10">id, value (1-5), comment,</text>
+  <text x="610" y="626" text-anchor="middle" fill="#cbd5e1" font-size="10">userId (FK), storeId (FK)</text>
+
+  <rect x="730" y="572" width="200" height="65" rx="10" fill="#334155" stroke="#475569"/>
+  <text x="830" y="595" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">Reset Token Table</text>
+  <text x="830" y="612" text-anchor="middle" fill="#cbd5e1" font-size="10">id, token, userId (FK),</text>
+  <text x="830" y="626" text-anchor="middle" fill="#cbd5e1" font-size="10">expiresAt</text>
+</svg>
