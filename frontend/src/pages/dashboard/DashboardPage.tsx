@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Menu,
@@ -17,16 +17,71 @@ import {
   KeyRound,
   ExternalLink,
   Coins,
-  ShieldCheck,
+  Plus,
+  Loader2,
+  SlidersHorizontal,
+  ArrowUpDown,
+  CheckCircle2,
+  UserPlus,
 } from 'lucide-react';
 import { useAuth } from '../../context/auth/AuthContext';
+import { storeApi, type StoreItem } from '../../apis/stores/storeApi';
+import { ratingApi, type StoreOwnerReviewData } from '../../apis/ratings/ratingApi';
+import { adminApi, type AdminMetrics, type AdminUserItem } from '../../apis/admin/adminApi';
+import { PasswordStrength } from '../../components/common/PasswordStrength';
 
 export default function DashboardPage() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'stores' | 'owner_reviews' | 'admin_users'>('overview');
+
+  // Stores State
+  const [stores, setStores] = useState<StoreItem[]>([]);
+  const [storesLoading, setStoresLoading] = useState(false);
+  const [storeSearch, setStoreSearch] = useState('');
+  const [storeSortBy, setStoreSortBy] = useState<'name' | 'address' | 'rating'>('rating');
+  const [storeSortOrder, setStoreSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Store Owner State
+  const [ownerData, setOwnerData] = useState<StoreOwnerReviewData | null>(null);
+  const [ownerLoading, setOwnerLoading] = useState(false);
+
+  // Admin State
+  const [adminMetrics, setAdminMetrics] = useState<AdminMetrics | null>(null);
+  const [adminUsers, setAdminUsers] = useState<AdminUserItem[]>([]);
+  const [adminUsersLoading, setAdminUsersLoading] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState<string>('');
+  const [userSortBy, setUserSortBy] = useState<'name' | 'email' | 'address' | 'role'>('name');
+  const [userSortOrder, setUserSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Rating Modal State
+  const [ratingModalStore, setRatingModalStore] = useState<StoreItem | null>(null);
+  const [selectedScore, setSelectedScore] = useState<number>(5);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [ratingSuccessMessage, setRatingSuccessMessage] = useState('');
+
+  // Admin Create Store Modal
+  const [createStoreModalOpen, setCreateStoreModalOpen] = useState(false);
+  const [newStoreName, setNewStoreName] = useState('');
+  const [newStoreEmail, setNewStoreEmail] = useState('');
+  const [newStoreAddress, setNewStoreAddress] = useState('');
+  const [newStoreOwnerId, setNewStoreOwnerId] = useState('');
+  const [storeFormError, setStoreFormError] = useState('');
+  const [storeFormLoading, setStoreFormLoading] = useState(false);
+
+  // Admin Create User Modal
+  const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserAddress, setNewUserAddress] = useState('');
+  const [newUserRole, setNewUserRole] = useState<'SYSTEM_ADMIN' | 'STORE_OWNER' | 'NORMAL_USER'>('NORMAL_USER');
+  const [userFormError, setUserFormError] = useState('');
+  const [userFormLoading, setUserFormLoading] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -41,69 +96,209 @@ export default function DashboardPage() {
       : name.slice(0, 2).toUpperCase();
   };
 
+  // Fetch Stores
+  const fetchStores = async () => {
+    setStoresLoading(true);
+    try {
+      const res = await storeApi.getAll({
+        search: storeSearch,
+        sortBy: storeSortBy,
+        sortOrder: storeSortOrder,
+      });
+      setStores(res.data.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setStoresLoading(false);
+    }
+  };
+
+  // Fetch Store Owner Reviews
+  const fetchOwnerReviews = async () => {
+    if (user?.role !== 'STORE_OWNER') return;
+    setOwnerLoading(true);
+    try {
+      const res = await ratingApi.getStoreOwnerReviews();
+      setOwnerData(res.data.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setOwnerLoading(false);
+    }
+  };
+
+  // Fetch Admin Data
+  const fetchAdminData = async () => {
+    if (user?.role !== 'SYSTEM_ADMIN') return;
+    setAdminUsersLoading(true);
+    try {
+      const [metricsRes, usersRes] = await Promise.all([
+        adminApi.getMetrics(),
+        adminApi.getUsers({
+          search: userSearch,
+          role: userRoleFilter || undefined,
+          sortBy: userSortBy,
+          sortOrder: userSortOrder,
+        }),
+      ]);
+      setAdminMetrics(metricsRes.data.data);
+      setAdminUsers(usersRes.data.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAdminUsersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStores();
+  }, [storeSearch, storeSortBy, storeSortOrder]);
+
+  useEffect(() => {
+    if (user?.role === 'STORE_OWNER') {
+      fetchOwnerReviews();
+    }
+    if (user?.role === 'SYSTEM_ADMIN') {
+      fetchAdminData();
+    }
+  }, [user, userSearch, userRoleFilter, userSortBy, userSortOrder]);
+
+  // Handle Rating Submit
+  const handleRatingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ratingModalStore) return;
+    setRatingSubmitting(true);
+    try {
+      await ratingApi.submitRating(ratingModalStore.id, selectedScore);
+      setRatingSuccessMessage(`Rating of ${selectedScore}★ saved for ${ratingModalStore.name}!`);
+      await fetchStores();
+      setTimeout(() => {
+        setRatingModalStore(null);
+        setRatingSuccessMessage('');
+      }, 1500);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to submit rating');
+    } finally {
+      setRatingSubmitting(false);
+    }
+  };
+
+  // Handle Admin Create Store
+  const handleCreateStore = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStoreFormError('');
+    if (!newStoreName || !newStoreEmail || !newStoreAddress) {
+      setStoreFormError('All fields are required');
+      return;
+    }
+    setStoreFormLoading(true);
+    try {
+      await storeApi.create({
+        name: newStoreName,
+        email: newStoreEmail,
+        address: newStoreAddress,
+        ownerId: newStoreOwnerId || undefined,
+      });
+      setCreateStoreModalOpen(false);
+      setNewStoreName('');
+      setNewStoreEmail('');
+      setNewStoreAddress('');
+      setNewStoreOwnerId('');
+      fetchStores();
+      if (user?.role === 'SYSTEM_ADMIN') fetchAdminData();
+    } catch (err: any) {
+      setStoreFormError(err.response?.data?.message || 'Failed to create store');
+    } finally {
+      setStoreFormLoading(false);
+    }
+  };
+
+  // Handle Admin Create User
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUserFormError('');
+    if (newUserName.length < 20 || newUserName.length > 60) {
+      setUserFormError('Name must be between 20 and 60 characters');
+      return;
+    }
+    if (!newUserAddress || newUserAddress.length > 400) {
+      setUserFormError('Address is required and must not exceed 400 characters');
+      return;
+    }
+    if (
+      newUserPassword.length < 8 ||
+      newUserPassword.length > 16 ||
+      !/[A-Z]/.test(newUserPassword) ||
+      !/[^A-Za-z0-9]/.test(newUserPassword)
+    ) {
+      setUserFormError(
+        'Password must be 8-16 chars with at least 1 uppercase and 1 special char'
+      );
+      return;
+    }
+
+    setUserFormLoading(true);
+    try {
+      await adminApi.createUser({
+        name: newUserName,
+        email: newUserEmail,
+        password: newUserPassword,
+        address: newUserAddress,
+        role: newUserRole,
+      });
+      setCreateUserModalOpen(false);
+      setNewUserName('');
+      setNewUserEmail('');
+      setNewUserPassword('');
+      setNewUserAddress('');
+      fetchAdminData();
+    } catch (err: any) {
+      setUserFormError(err.response?.data?.message || 'Failed to create user');
+    } finally {
+      setUserFormLoading(false);
+    }
+  };
+
   const quickActions = [
     {
       title: 'Browse Stores',
       desc: 'Discover and rate top-rated neighborhood stores.',
       icon: <FilePlus size={20} />,
       color: 'purple',
-      href: '/',
+      onClick: () => setActiveTab('stores'),
     },
     {
       title: 'Write Review',
       desc: 'Submit transparent 1 to 5 star verified store ratings.',
       icon: <Edit size={20} />,
       color: 'blue',
-      href: '/',
+      onClick: () => setActiveTab('stores'),
     },
     {
       title: 'Search Directory',
       desc: 'Search stores by name, email, and address quickly.',
       icon: <Search size={20} />,
       color: 'emerald',
-      href: '/',
+      onClick: () => setActiveTab('stores'),
     },
     {
-      title: 'Store Analytics',
-      desc: 'View reviewer metrics, averages, and store stats.',
+      title: user?.role === 'SYSTEM_ADMIN' ? 'User Management' : 'Store Analytics',
+      desc:
+        user?.role === 'SYSTEM_ADMIN'
+          ? 'Manage system accounts and platform listings.'
+          : 'View reviewer metrics, averages, and store stats.',
       icon: <Building2 size={20} />,
       color: 'orange',
-      href: '/dashboard',
+      onClick: () =>
+        setActiveTab(
+          user?.role === 'SYSTEM_ADMIN'
+            ? 'admin_users'
+            : user?.role === 'STORE_OWNER'
+            ? 'owner_reviews'
+            : 'stores'
+        ),
     },
   ];
-
-  const sampleStores = [
-    {
-      id: '1',
-      name: 'Brew & Bloom Specialty Cafe',
-      email: 'owner@brewnbloom.com',
-      address: '142 Market Street, Arts District',
-      rating: 4.8,
-      totalRatings: 34,
-    },
-    {
-      id: '2',
-      name: 'Artisan Boutique Apparel',
-      email: 'contact@artisanboutique.com',
-      address: '88 Fashion Avenue, Midtown',
-      rating: 4.6,
-      totalRatings: 21,
-    },
-    {
-      id: '3',
-      name: 'The Book & Brew Corner',
-      email: 'hello@bookandbrew.com',
-      address: '52 University Way, Westside',
-      rating: 4.9,
-      totalRatings: 58,
-    },
-  ];
-
-  const filteredStores = sampleStores.filter(
-    (s) =>
-      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.address.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
@@ -137,13 +332,17 @@ export default function DashboardPage() {
             <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-3 block mb-2">
               DASHBOARD
             </span>
-            <Link
-              to="/dashboard"
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-blue-50 text-blue-600 font-semibold text-sm transition"
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold text-sm transition cursor-pointer text-left ${
+                activeTab === 'overview'
+                  ? 'bg-blue-50 text-blue-600'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-black'
+              }`}
             >
               <LayoutGrid size={18} />
               <span>Overview</span>
-            </Link>
+            </button>
           </div>
 
           {/* Stores & Ratings Section */}
@@ -152,27 +351,31 @@ export default function DashboardPage() {
               STORES & RATINGS
             </span>
             <div className="space-y-1 text-sm font-medium text-gray-600">
-              <Link
-                to="/"
-                className="flex items-center gap-3 px-3.5 py-2 rounded-xl hover:bg-gray-100 hover:text-black transition"
+              <button
+                onClick={() => setActiveTab('stores')}
+                className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition cursor-pointer text-left ${
+                  activeTab === 'stores'
+                    ? 'bg-blue-50 text-blue-600 font-semibold'
+                    : 'hover:bg-gray-100 hover:text-black'
+                }`}
               >
-                <Search size={18} className="text-gray-400" />
+                <Search size={18} className={activeTab === 'stores' ? 'text-blue-600' : 'text-gray-400'} />
                 <span>Browse Stores</span>
-              </Link>
-              <Link
-                to="/"
-                className="flex items-center gap-3 px-3.5 py-2 rounded-xl hover:bg-gray-100 hover:text-black transition"
-              >
-                <Star size={18} className="text-gray-400" />
-                <span>Top Rated</span>
-              </Link>
-              <Link
-                to="/dashboard"
-                className="flex items-center gap-3 px-3.5 py-2 rounded-xl hover:bg-gray-100 hover:text-black transition"
-              >
-                <ShieldCheck size={18} className="text-gray-400" />
-                <span>My Reviews</span>
-              </Link>
+              </button>
+
+              {user?.role === 'STORE_OWNER' && (
+                <button
+                  onClick={() => setActiveTab('owner_reviews')}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition cursor-pointer text-left ${
+                    activeTab === 'owner_reviews'
+                      ? 'bg-blue-50 text-blue-600 font-semibold'
+                      : 'hover:bg-gray-100 hover:text-black'
+                  }`}
+                >
+                  <Star size={18} className={activeTab === 'owner_reviews' ? 'text-blue-600' : 'text-gray-400'} />
+                  <span>Customer Reviews</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -183,20 +386,28 @@ export default function DashboardPage() {
                 ADMINISTRATION
               </span>
               <div className="space-y-1 text-sm font-medium text-gray-600">
-                <Link
-                  to="/dashboard"
-                  className="flex items-center gap-3 px-3.5 py-2 rounded-xl hover:bg-gray-100 hover:text-black transition"
+                <button
+                  onClick={() => setActiveTab('stores')}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition cursor-pointer text-left ${
+                    activeTab === 'stores'
+                      ? 'bg-blue-50 text-blue-600 font-semibold'
+                      : 'hover:bg-gray-100 hover:text-black'
+                  }`}
                 >
                   <Building2 size={18} className="text-gray-400" />
                   <span>Store Directory</span>
-                </Link>
-                <Link
-                  to="/dashboard"
-                  className="flex items-center gap-3 px-3.5 py-2 rounded-xl hover:bg-gray-100 hover:text-black transition"
+                </button>
+                <button
+                  onClick={() => setActiveTab('admin_users')}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition cursor-pointer text-left ${
+                    activeTab === 'admin_users'
+                      ? 'bg-blue-50 text-blue-600 font-semibold'
+                      : 'hover:bg-gray-100 hover:text-black'
+                  }`}
                 >
-                  <Users size={18} className="text-gray-400" />
+                  <Users size={18} className={activeTab === 'admin_users' ? 'text-blue-600' : 'text-gray-400'} />
                   <span>User Management</span>
-                </Link>
+                </button>
               </div>
             </div>
           )}
@@ -259,7 +470,13 @@ export default function DashboardPage() {
               {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
             <span className="text-sm font-semibold text-gray-700">
-              Dashboard Overview
+              {activeTab === 'overview'
+                ? 'Dashboard Overview'
+                : activeTab === 'stores'
+                ? 'Store Listings & Ratings'
+                : activeTab === 'owner_reviews'
+                ? 'Store Owner Reviewer Hub'
+                : 'User Management (Admin)'}
             </span>
           </div>
 
@@ -311,208 +528,853 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        {/* Dashboard Main Content matching screenshot */}
+        {/* Dashboard Main Content Body */}
         <main className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-10 max-w-6xl w-full mx-auto">
-          {/* Quick Actions */}
-          <div>
-            <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
-              QUICK ACTIONS
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {quickActions.map((action) => (
-                <Link
-                  key={action.title}
-                  to={action.href}
-                  className="text-left flex flex-col items-start p-6 rounded-2xl border border-gray-200 bg-white hover:border-blue-500/50 hover:shadow-md transition-all group shadow-xs"
-                >
-                  <div
-                    className={`p-3 rounded-xl transition-all group-hover:scale-110 mb-4 ${
-                      action.color === 'purple'
-                        ? 'bg-purple-50 text-purple-600'
-                        : action.color === 'blue'
-                        ? 'bg-blue-50 text-blue-600'
-                        : action.color === 'emerald'
-                        ? 'bg-emerald-50 text-emerald-600'
-                        : 'bg-orange-50 text-orange-600'
-                    }`}
-                  >
-                    {action.icon}
-                  </div>
-                  <h3 className="font-bold text-black text-sm mb-1">
-                    {action.title}
-                  </h3>
-                  <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
-                    {action.desc}
-                  </p>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Recent Versions / Ratings Card matching screenshot */}
-          <div>
-            <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
-              RECENT RATINGS & REVIEWS
-            </h2>
-            <div className="rounded-2xl border border-gray-200 bg-white p-12 flex flex-col items-center justify-center text-center shadow-xs">
-              <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
-                <Clock size={24} />
-              </div>
-              <h3 className="text-base font-bold text-black mb-1">
-                No Reviews Submitted Yet
-              </h3>
-              <p className="text-xs text-gray-500 max-w-sm mb-6 leading-relaxed">
-                Explore registered neighborhood stores and submit your first verified 1 to 5 star rating.
-              </p>
-              <Link
-                to="/"
-                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95"
-              >
-                Browse & Rate Stores
-              </Link>
-            </div>
-          </div>
-
-          {/* Bottom 2-Column: Sync Profile & Tracker matching screenshot */}
-          <div>
-            <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
-              SYNC STORE DIRECTORY & RATING METRICS
-            </h2>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Sync Card */}
-              <div className="lg:col-span-2 rounded-2xl border border-gray-200 bg-white p-6 shadow-xs flex flex-col justify-between relative overflow-hidden">
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 text-blue-600 font-bold text-xs mb-3">
-                    <Sparkles size={16} className="animate-pulse" />
-                    <span>Store Directory Active</span>
-                  </div>
-                  <h3 className="text-base font-bold text-black mb-2">
-                    Your Store Reviews & Ratings are Synced
-                  </h3>
-                  <p className="text-xs text-gray-500 leading-relaxed mb-6">
-                    You can discover verified stores, submit transparent 1-to-5 star scores, and modify your past reviews anytime. Use the sync button below to refresh real-time metrics.
-                  </p>
-                </div>
-
-                <div className="relative z-10">
-                  <Link
-                    to="/"
-                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition-all inline-flex items-center gap-2 cursor-pointer active:scale-95"
-                  >
-                    <RefreshCw size={14} />
-                    <span>Sync Changes</span>
-                  </Link>
-                </div>
-              </div>
-
-              {/* Right Limits / Stats Tracker Card */}
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center gap-2 text-blue-600 font-bold text-xs mb-4">
-                    <Sparkles size={16} />
-                    <span>Rating Activity Tracker</span>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between items-center text-xs font-semibold text-gray-700 mb-1.5">
-                        <span>Ratings Submitted</span>
-                        <span className="text-black font-bold">5</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-blue-600 rounded-full"
-                          style={{ width: '60%' }}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between items-center text-xs font-semibold text-gray-700 mb-1.5">
-                        <span>Average Score Given</span>
-                        <span className="text-blue-600 font-bold">4.8 / 5.0</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-emerald-500 rounded-full"
-                          style={{ width: '96%' }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-gray-100 mt-4 text-[11px] text-gray-500 flex justify-between">
-                  <span>Stores Explored</span>
-                  <span className="font-bold text-gray-800">12 Stores</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Searchable Stores Directory Table */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-            <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* TAB 1: OVERVIEW */}
+          {activeTab === 'overview' && (
+            <>
+              {/* Quick Actions */}
               <div>
-                <h3 className="text-sm font-bold text-black">
-                  Registered Stores Directory
-                </h3>
+                <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
+                  QUICK ACTIONS
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {quickActions.map((action) => (
+                    <button
+                      key={action.title}
+                      onClick={action.onClick}
+                      className="text-left flex flex-col items-start p-6 rounded-2xl border border-gray-200 bg-white hover:border-blue-500/50 hover:shadow-md transition-all group shadow-xs cursor-pointer"
+                    >
+                      <div
+                        className={`p-3 rounded-xl transition-all group-hover:scale-110 mb-4 ${
+                          action.color === 'purple'
+                            ? 'bg-purple-50 text-purple-600'
+                            : action.color === 'blue'
+                            ? 'bg-blue-50 text-blue-600'
+                            : action.color === 'emerald'
+                            ? 'bg-emerald-50 text-emerald-600'
+                            : 'bg-orange-50 text-orange-600'
+                        }`}
+                      >
+                        {action.icon}
+                      </div>
+                      <h3 className="font-bold text-black text-sm mb-1">
+                        {action.title}
+                      </h3>
+                      <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                        {action.desc}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Admin Platform Metrics if Admin */}
+              {user?.role === 'SYSTEM_ADMIN' && adminMetrics && (
+                <div>
+                  <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
+                    ADMIN PLATFORM STATS
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between">
+                      <div>
+                        <span className="text-xs text-gray-500 font-medium">Total Registered Users</span>
+                        <p className="text-3xl font-bold text-black mt-2">{adminMetrics.totalUsers}</p>
+                      </div>
+                      <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <Users size={22} />
+                      </div>
+                    </div>
+                    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between">
+                      <div>
+                        <span className="text-xs text-gray-500 font-medium">Total Registered Stores</span>
+                        <p className="text-3xl font-bold text-black mt-2">{adminMetrics.totalStores}</p>
+                      </div>
+                      <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                        <Building2 size={22} />
+                      </div>
+                    </div>
+                    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between">
+                      <div>
+                        <span className="text-xs text-gray-500 font-medium">Total Ratings Submitted</span>
+                        <p className="text-3xl font-bold text-black mt-2">{adminMetrics.totalRatings}</p>
+                      </div>
+                      <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                        <Star size={22} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Versions / Ratings Card matching screenshot */}
+              <div>
+                <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
+                  RECENT RATINGS & REVIEWS
+                </h2>
+                <div className="rounded-2xl border border-gray-200 bg-white p-12 flex flex-col items-center justify-center text-center shadow-xs">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
+                    <Clock size={24} />
+                  </div>
+                  <h3 className="text-base font-bold text-black mb-1">
+                    {user?.role === 'STORE_OWNER'
+                      ? `${ownerData?.totalRatings || 0} Ratings Received for Your Store`
+                      : 'Explore Neighborhood Stores'}
+                  </h3>
+                  <p className="text-xs text-gray-500 max-w-sm mb-6 leading-relaxed">
+                    {user?.role === 'STORE_OWNER'
+                      ? 'View reviewer names, ratings, and customer feedback breakdown in real time.'
+                      : 'Discover verified registered stores, browse reviews, and submit your 1 to 5 star scores.'}
+                  </p>
+                  <button
+                    onClick={() =>
+                      setActiveTab(
+                        user?.role === 'STORE_OWNER' ? 'owner_reviews' : 'stores'
+                      )
+                    }
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95"
+                  >
+                    {user?.role === 'STORE_OWNER'
+                      ? 'View Customer Feedback'
+                      : 'Browse & Rate Stores'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Bottom 2-Column: Sync Profile & Tracker matching screenshot */}
+              <div>
+                <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
+                  SYNC STORE DIRECTORY & RATING METRICS
+                </h2>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Left Sync Card */}
+                  <div className="lg:col-span-2 rounded-2xl border border-gray-200 bg-white p-6 shadow-xs flex flex-col justify-between relative overflow-hidden">
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-2 text-blue-600 font-bold text-xs mb-3">
+                        <Sparkles size={16} className="animate-pulse" />
+                        <span>Store Directory Active</span>
+                      </div>
+                      <h3 className="text-base font-bold text-black mb-2">
+                        Your Store Reviews & Ratings are Synced
+                      </h3>
+                      <p className="text-xs text-gray-500 leading-relaxed mb-6">
+                        You can discover verified stores, submit transparent 1-to-5 star scores, and modify your past reviews anytime. Use the sync button below to refresh real-time metrics.
+                      </p>
+                    </div>
+
+                    <div className="relative z-10 flex gap-3">
+                      <button
+                        onClick={fetchStores}
+                        className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition-all inline-flex items-center gap-2 cursor-pointer active:scale-95"
+                      >
+                        <RefreshCw size={14} />
+                        <span>Sync Changes</span>
+                      </button>
+
+                      {user?.role === 'SYSTEM_ADMIN' && (
+                        <>
+                          <button
+                            onClick={() => setCreateStoreModalOpen(true)}
+                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5"
+                          >
+                            <Plus size={14} />
+                            <span>Add Store</span>
+                          </button>
+                          <button
+                            onClick={() => setCreateUserModalOpen(true)}
+                            className="px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5"
+                          >
+                            <UserPlus size={14} />
+                            <span>Add User</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Limits / Stats Tracker Card */}
+                  <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 text-blue-600 font-bold text-xs mb-4">
+                        <Sparkles size={16} />
+                        <span>Rating Activity Tracker</span>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <div className="flex justify-between items-center text-xs font-semibold text-gray-700 mb-1.5">
+                            <span>Available Stores</span>
+                            <span className="text-black font-bold">{stores.length}</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-blue-600 rounded-full"
+                              style={{ width: `${Math.min(100, stores.length * 25)}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex justify-between items-center text-xs font-semibold text-gray-700 mb-1.5">
+                            <span>Platform Quality Index</span>
+                            <span className="text-blue-600 font-bold">4.8 / 5.0</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-emerald-500 rounded-full"
+                              style={{ width: '96%' }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-gray-100 mt-4 text-[11px] text-gray-500 flex justify-between">
+                      <span>Status</span>
+                      <span className="font-bold text-emerald-600">● 100% Operational</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* TAB 2: STORES & RATINGS DIRECTORY */}
+          {activeTab === 'stores' && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold text-black">Stores Directory</h2>
+                  <p className="text-xs text-gray-500">
+                    Search and rate local businesses registered on RateHub
+                  </p>
+                </div>
+
+                {user?.role === 'SYSTEM_ADMIN' && (
+                  <button
+                    onClick={() => setCreateStoreModalOpen(true)}
+                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer w-fit"
+                  >
+                    <Plus size={16} />
+                    <span>Add New Store</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Search and Sort Controls */}
+              <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="relative w-full sm:w-80">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by Name or Address..."
+                    value={storeSearch}
+                    onChange={(e) => setStoreSearch(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-black focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <SlidersHorizontal size={14} />
+                    <span>Sort by:</span>
+                  </div>
+                  <select
+                    value={storeSortBy}
+                    onChange={(e) => setStoreSortBy(e.target.value as any)}
+                    className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 font-medium focus:outline-hidden"
+                  >
+                    <option value="rating">Rating</option>
+                    <option value="name">Name</option>
+                    <option value="address">Address</option>
+                  </select>
+                  <button
+                    onClick={() => setStoreSortOrder(storeSortOrder === 'asc' ? 'desc' : 'asc')}
+                    className="p-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-100 transition cursor-pointer"
+                    title="Toggle Sort Order"
+                  >
+                    <ArrowUpDown size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Stores Table */}
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+                {storesLoading ? (
+                  <div className="p-12 text-center text-gray-400 flex items-center justify-center gap-2">
+                    <Loader2 size={20} className="animate-spin text-blue-600" />
+                    <span>Loading stores directory...</span>
+                  </div>
+                ) : stores.length === 0 ? (
+                  <div className="p-12 text-center text-gray-500 text-sm">
+                    No stores found matching your criteria.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 uppercase tracking-wider font-semibold">
+                        <tr>
+                          <th className="px-6 py-3.5">Store Name</th>
+                          <th className="px-6 py-3.5">Contact Email</th>
+                          <th className="px-6 py-3.5">Address</th>
+                          <th className="px-6 py-3.5">Overall Rating</th>
+                          <th className="px-6 py-3.5">My Rating</th>
+                          <th className="px-6 py-3.5 text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 text-gray-700">
+                        {stores.map((store) => (
+                          <tr key={store.id} className="hover:bg-gray-50/70 transition">
+                            <td className="px-6 py-4 font-bold text-black">{store.name}</td>
+                            <td className="px-6 py-4 text-gray-500">{store.email}</td>
+                            <td className="px-6 py-4 text-gray-600">{store.address}</td>
+                            <td className="px-6 py-4">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 font-bold rounded-lg">
+                                <Star size={12} className="fill-amber-500 text-amber-500" />
+                                {store.averageRating || '0.0'}
+                                <span className="text-[10px] text-gray-400 font-normal">
+                                  ({store.totalRatings})
+                                </span>
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              {store.userRating ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 font-bold rounded-lg">
+                                  <Star size={12} className="fill-blue-600 text-blue-600" />
+                                  {store.userRating}★ (Rated)
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 italic">Not rated yet</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              {user?.role === 'NORMAL_USER' && (
+                                <button
+                                  onClick={() => {
+                                    setRatingModalStore(store);
+                                    setSelectedScore(store.userRating || 5);
+                                  }}
+                                  className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded-lg transition cursor-pointer"
+                                >
+                                  {store.userRating ? 'Modify Rating' : 'Rate Store'}
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: STORE OWNER REVIEWS */}
+          {activeTab === 'owner_reviews' && user?.role === 'STORE_OWNER' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-black">Store Customer Feedback</h2>
                 <p className="text-xs text-gray-500">
-                  Search stores by name, email, or address
+                  Review verified customer submissions and store rating score
                 </p>
               </div>
 
-              <div className="relative w-full sm:w-64">
-                <Search
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                />
-                <input
-                  type="text"
-                  placeholder="Search stores..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-black focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-                />
+              {/* Store Average Stats */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between">
+                  <div>
+                    <span className="text-xs text-gray-500 font-medium">Average Store Rating</span>
+                    <p className="text-3xl font-bold text-black mt-2">
+                      {ownerData?.averageRating || '0.0'}{' '}
+                      <span className="text-sm font-normal text-gray-400">/ 5.0</span>
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <Star size={24} className="fill-amber-500 text-amber-500" />
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between">
+                  <div>
+                    <span className="text-xs text-gray-500 font-medium">Total Customer Ratings</span>
+                    <p className="text-3xl font-bold text-black mt-2">
+                      {ownerData?.totalRatings || 0}
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <Users size={24} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Reviewers Table */}
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+                <div className="p-5 border-b border-gray-100">
+                  <h3 className="text-sm font-bold text-black">Customer Ratings List</h3>
+                  <p className="text-xs text-gray-500">
+                    Names, contact emails, addresses, and scores of customers who reviewed your store
+                  </p>
+                </div>
+
+                {ownerLoading ? (
+                  <div className="p-12 text-center text-gray-400">Loading reviews...</div>
+                ) : (ownerData?.ratings.length || 0) === 0 ? (
+                  <div className="p-12 text-center text-gray-500 text-sm">
+                    No customers have submitted ratings for your store yet.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 uppercase tracking-wider font-semibold">
+                        <tr>
+                          <th className="px-6 py-3.5">Customer Name</th>
+                          <th className="px-6 py-3.5">Email</th>
+                          <th className="px-6 py-3.5">Address</th>
+                          <th className="px-6 py-3.5">Rating</th>
+                          <th className="px-6 py-3.5 text-right">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 text-gray-700">
+                        {ownerData?.ratings.map((r) => (
+                          <tr key={r.id} className="hover:bg-gray-50/70 transition">
+                            <td className="px-6 py-4 font-bold text-black">{r.user.name}</td>
+                            <td className="px-6 py-4 text-gray-500">{r.user.email}</td>
+                            <td className="px-6 py-4 text-gray-600">{r.user.address}</td>
+                            <td className="px-6 py-4">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 font-bold rounded-lg">
+                                <Star size={12} className="fill-amber-500 text-amber-500" />
+                                {r.value} Stars
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right text-gray-400">
+                              {new Date(r.createdAt).toLocaleDateString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
+          )}
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 uppercase tracking-wider font-semibold">
-                  <tr>
-                    <th className="px-6 py-3.5">Store Name</th>
-                    <th className="px-6 py-3.5">Contact Email</th>
-                    <th className="px-6 py-3.5">Address</th>
-                    <th className="px-6 py-3.5">Rating</th>
-                    <th className="px-6 py-3.5 text-right">Reviews</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 text-gray-700">
-                  {filteredStores.map((store) => (
-                    <tr key={store.id} className="hover:bg-gray-50/70 transition">
-                      <td className="px-6 py-4 font-bold text-black">
-                        {store.name}
-                      </td>
-                      <td className="px-6 py-4 text-gray-500">{store.email}</td>
-                      <td className="px-6 py-4 text-gray-600">{store.address}</td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 font-bold rounded-lg">
-                          <Star size={12} className="fill-amber-500 text-amber-500" />
-                          {store.rating}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right font-medium text-gray-500">
-                        {store.totalRatings} reviews
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* TAB 4: ADMIN USERS MANAGEMENT */}
+          {activeTab === 'admin_users' && user?.role === 'SYSTEM_ADMIN' && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold text-black">User Management</h2>
+                  <p className="text-xs text-gray-500">
+                    Manage system administrators, store owners, and normal users
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setCreateUserModalOpen(true)}
+                  className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer w-fit"
+                >
+                  <UserPlus size={16} />
+                  <span>Add New User</span>
+                </button>
+              </div>
+
+              {/* Filters & Search */}
+              <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="relative w-full sm:w-80">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by Name, Email or Address..."
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-black focus:outline-hidden focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
+                  <select
+                    value={userRoleFilter}
+                    onChange={(e) => setUserRoleFilter(e.target.value)}
+                    className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 font-medium focus:outline-hidden"
+                  >
+                    <option value="">All Roles</option>
+                    <option value="SYSTEM_ADMIN">Admin</option>
+                    <option value="STORE_OWNER">Store Owner</option>
+                    <option value="NORMAL_USER">Normal User</option>
+                  </select>
+
+                  <select
+                    value={userSortBy}
+                    onChange={(e) => setUserSortBy(e.target.value as any)}
+                    className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 font-medium focus:outline-hidden"
+                  >
+                    <option value="name">Sort by Name</option>
+                    <option value="email">Sort by Email</option>
+                    <option value="address">Sort by Address</option>
+                    <option value="role">Sort by Role</option>
+                  </select>
+
+                  <button
+                    onClick={() => setUserSortOrder(userSortOrder === 'asc' ? 'desc' : 'asc')}
+                    className="p-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-100 transition cursor-pointer"
+                    title="Toggle Sort Order"
+                  >
+                    <ArrowUpDown size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Users Table */}
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+                {adminUsersLoading ? (
+                  <div className="p-12 text-center text-gray-400">Loading user records...</div>
+                ) : adminUsers.length === 0 ? (
+                  <div className="p-12 text-center text-gray-500 text-sm">
+                    No users found matching your search.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 uppercase tracking-wider font-semibold">
+                        <tr>
+                          <th className="px-6 py-3.5">Full Name</th>
+                          <th className="px-6 py-3.5">Email</th>
+                          <th className="px-6 py-3.5">Address</th>
+                          <th className="px-6 py-3.5">Role</th>
+                          <th className="px-6 py-3.5">Store & Rating</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 text-gray-700">
+                        {adminUsers.map((u) => (
+                          <tr key={u.id} className="hover:bg-gray-50/70 transition">
+                            <td className="px-6 py-4 font-bold text-black">{u.name}</td>
+                            <td className="px-6 py-4 text-gray-500">{u.email}</td>
+                            <td className="px-6 py-4 text-gray-600">{u.address}</td>
+                            <td className="px-6 py-4">
+                              <span
+                                className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                  u.role === 'SYSTEM_ADMIN'
+                                    ? 'bg-purple-100 text-purple-700'
+                                    : u.role === 'STORE_OWNER'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-gray-100 text-gray-700'
+                                }`}
+                              >
+                                {u.role === 'SYSTEM_ADMIN'
+                                  ? 'Admin'
+                                  : u.role === 'STORE_OWNER'
+                                  ? 'Store Owner'
+                                  : 'Normal User'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              {u.store ? (
+                                <span className="inline-flex items-center gap-1 font-semibold text-gray-800">
+                                  {u.store.name}
+                                  <span className="text-amber-600 font-bold ml-1">
+                                    ★ {u.store.rating || '0.0'}
+                                  </span>
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </main>
       </div>
+
+      {/* RATING SUBMISSION MODAL */}
+      {ratingModalStore && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-gray-200 animate-in fade-in zoom-in duration-150">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-black">Rate {ratingModalStore.name}</h3>
+                <p className="text-xs text-gray-500">{ratingModalStore.address}</p>
+              </div>
+              <button
+                onClick={() => setRatingModalStore(null)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {ratingSuccessMessage ? (
+              <div className="p-4 bg-green-50 text-green-700 rounded-2xl text-xs font-semibold flex items-center gap-2">
+                <CheckCircle2 size={16} />
+                <span>{ratingSuccessMessage}</span>
+              </div>
+            ) : (
+              <form onSubmit={handleRatingSubmit} className="space-y-6">
+                <div className="space-y-2 text-center py-4">
+                  <label className="text-xs font-semibold text-gray-600 block">
+                    Choose Your 1 to 5 Star Rating:
+                  </label>
+                  <div className="flex items-center justify-center gap-2">
+                    {[1, 2, 3, 4, 5].map((score) => (
+                      <button
+                        key={score}
+                        type="button"
+                        onClick={() => setSelectedScore(score)}
+                        className={`p-3 rounded-2xl transition cursor-pointer ${
+                          selectedScore >= score
+                            ? 'bg-amber-100 text-amber-500 scale-105'
+                            : 'bg-gray-100 text-gray-300'
+                        }`}
+                      >
+                        <Star size={24} className={selectedScore >= score ? 'fill-amber-500' : ''} />
+                      </button>
+                    ))}
+                  </div>
+                  <span className="text-sm font-bold text-gray-800 mt-2 block">
+                    {selectedScore} out of 5 Stars
+                  </span>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setRatingModalStore(null)}
+                    className="w-1/2 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-semibold text-xs hover:bg-gray-50 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={ratingSubmitting}
+                    className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    {ratingSubmitting && <Loader2 size={14} className="animate-spin" />}
+                    <span>Submit Rating</span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ADMIN CREATE STORE MODAL */}
+      {createStoreModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-gray-200">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-black">Add New Store</h3>
+                <p className="text-xs text-gray-500">Register a store on RateHub</p>
+              </div>
+              <button
+                onClick={() => setCreateStoreModalOpen(false)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {storeFormError && (
+              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-xl text-xs font-medium">
+                {storeFormError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateStore} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-700">Store Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Modern Artisan Bakery"
+                  value={newStoreName}
+                  onChange={(e) => setNewStoreName(e.target.value)}
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-700">Contact Email</label>
+                <input
+                  type="email"
+                  placeholder="contact@store.com"
+                  value={newStoreEmail}
+                  onChange={(e) => setNewStoreEmail(e.target.value)}
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-700">Address (Max 400 chars)</label>
+                <textarea
+                  rows={2}
+                  placeholder="123 Main Street, Central Plaza"
+                  value={newStoreAddress}
+                  onChange={(e) => setNewStoreAddress(e.target.value)}
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-700">Assign Store Owner (Optional)</label>
+                <select
+                  value={newStoreOwnerId}
+                  onChange={(e) => setNewStoreOwnerId(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select a registered Store Owner</option>
+                  {adminUsers
+                    .filter((u) => u.role === 'STORE_OWNER')
+                    .map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name} ({u.email})
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCreateStoreModalOpen(false)}
+                  className="w-1/2 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-semibold text-xs hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={storeFormLoading}
+                  className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5"
+                >
+                  {storeFormLoading && <Loader2 size={14} className="animate-spin" />}
+                  <span>Create Store</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ADMIN CREATE USER MODAL */}
+      {createUserModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-gray-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-black">Add New User</h3>
+                <p className="text-xs text-gray-500">Create an Admin, Store Owner or Normal User</p>
+              </div>
+              <button
+                onClick={() => setCreateUserModalOpen(false)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {userFormError && (
+              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-xl text-xs font-medium">
+                {userFormError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateUser} className="space-y-4">
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-semibold text-gray-700">Full Name</label>
+                  <span className="text-[10px] text-gray-400">{newUserName.length}/60 (Min 20)</span>
+                </div>
+                <input
+                  type="text"
+                  placeholder="e.g. Jonathan Alexander Miller"
+                  value={newUserName}
+                  onChange={(e) => setNewUserName(e.target.value)}
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-700">Email Address</label>
+                <input
+                  type="email"
+                  placeholder="user@example.com"
+                  value={newUserEmail}
+                  onChange={(e) => setNewUserEmail(e.target.value)}
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-700">User Role</label>
+                <select
+                  value={newUserRole}
+                  onChange={(e) => setNewUserRole(e.target.value as any)}
+                  className="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="NORMAL_USER">Normal User</option>
+                  <option value="STORE_OWNER">Store Owner</option>
+                  <option value="SYSTEM_ADMIN">System Administrator</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-700">Address (Max 400 chars)</label>
+                <textarea
+                  rows={2}
+                  placeholder="742 Evergreen Terrace, Sector 4"
+                  value={newUserAddress}
+                  onChange={(e) => setNewUserAddress(e.target.value)}
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-purple-500 resize-none"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-700">Password</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={newUserPassword}
+                  onChange={(e) => setNewUserPassword(e.target.value)}
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-black focus:ring-2 focus:ring-purple-500"
+                />
+                <PasswordStrength password={newUserPassword} />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCreateUserModalOpen(false)}
+                  className="w-1/2 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-semibold text-xs hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={userFormLoading}
+                  className="w-1/2 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5"
+                >
+                  {userFormLoading && <Loader2 size={14} className="animate-spin" />}
+                  <span>Create User</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
